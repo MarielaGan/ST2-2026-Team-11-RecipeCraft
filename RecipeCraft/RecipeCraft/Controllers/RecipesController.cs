@@ -65,12 +65,64 @@ namespace RecipeCraft.Controllers
                 return RedirectToAction(nameof(Index)); // Пренасочва към списъка с рецепти
             }
 
-            // Ако има грешки, връщаме същата форма с въведените данни и съобщения за грешка
             return View(recipe);
         }
 
         // ==========================================
-        // 3. DELETE (Изтриване на рецепта)
+        // 3. UPDATE (Редакция на рецепта)
+        // ==========================================
+
+        // GET: Recipes/Edit/5 (Показва формата, попълнена със сегашните данни)
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var recipe = await _context.Recipes.FindAsync(id);
+            if (recipe == null)
+            {
+                return NotFound();
+            }
+
+            return View(recipe);
+        }
+
+        // POST: Recipes/Edit/5 (Записва промените в базата данни)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Recipe recipe)
+        {
+            if (id != recipe.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(recipe);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!await _context.Recipes.AnyAsync(r => r.Id == id))
+                    {
+                        return NotFound();
+                    }
+                    throw;
+                }
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(recipe);
+        }
+
+        // ==========================================
+        // 4. DELETE (Изтриване на рецепта)
         // ==========================================
 
         // GET: Recipes/Delete/5 (Показва страница за потвърждение)
