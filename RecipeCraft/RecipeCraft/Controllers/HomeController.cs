@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using ST2_2026_Team_10_RecipeCraft.Models;
+using RecipeCraft.Models;
 using System.Diagnostics;
 
-namespace ST2_2026_Team_10_RecipeCraft.Controllers
+namespace RecipeCraft.Controllers
 {
     public class HomeController : Controller
     {

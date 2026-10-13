@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ST2_2026_Team_10_RecipeCraft.Services;
+using RecipeCraft.Services;
 
-namespace ST2_2026_Team_10_RecipeCraft.Controllers
+namespace RecipeCraft.Controllers
 {
     public class SettingsController : Controller
     {

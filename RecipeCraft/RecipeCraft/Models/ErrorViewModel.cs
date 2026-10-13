@@ -1,4 +1,4 @@
-namespace ST2_2026_Team_10_RecipeCraft.Models
+namespace RecipeCraft.Models
 {
     public class ErrorViewModel
     {

@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>ST2_2026_Team_10_RecipeCraft</RootNamespace>
+    <RootNamespace>RecipeCraft</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

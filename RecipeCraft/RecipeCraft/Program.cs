@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using ST2_2026_Team_10_RecipeCraft.Data;
-using ST2_2026_Team_10_RecipeCraft.Services;
+using RecipeCraft.Data;
+using RecipeCraft.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

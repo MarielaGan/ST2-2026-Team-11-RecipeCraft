@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
-namespace ST2_2026_Team_10_RecipeCraft.Services
+namespace RecipeCraft.Services
 {
     public class AppSettingsModel
     {

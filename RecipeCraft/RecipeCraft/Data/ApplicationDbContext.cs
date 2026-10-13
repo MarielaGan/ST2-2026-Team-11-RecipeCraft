@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ST2_2026_Team_10_RecipeCraft.Models;
+using RecipeCraft.Models;
 
-namespace ST2_2026_Team_10_RecipeCraft.Data
+namespace RecipeCraft.Data
 {
     public class ApplicationDbContext:DbContext
     {

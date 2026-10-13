@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ST2_2026_Team_10_RecipeCraft.Data;
-using ST2_2026_Team_10_RecipeCraft.Models;
+using RecipeCraft.Data;
+using RecipeCraft.Models;
 
-namespace ST2_2026_Team_10_RecipeCraft.Controllers
+namespace RecipeCraft.Controllers
 {
     public class RecipesController:Controller
     {
