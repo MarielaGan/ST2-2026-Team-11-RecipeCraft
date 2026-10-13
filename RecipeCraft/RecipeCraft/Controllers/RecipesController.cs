@@ -68,5 +68,43 @@ namespace RecipeCraft.Controllers
             // Ако има грешки, връщаме същата форма с въведените данни и съобщения за грешка
             return View(recipe);
         }
+
+        // ==========================================
+        // 3. DELETE (Изтриване на рецепта)
+        // ==========================================
+
+        // GET: Recipes/Delete/5 (Показва страница за потвърждение)
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var recipe = await _context.Recipes
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (recipe == null)
+            {
+                return NotFound();
+            }
+
+            return View(recipe);
+        }
+
+        // POST: Recipes/Delete/5 (Извършва същинското изтриване от базата)
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var recipe = await _context.Recipes.FindAsync(id);
+            if (recipe != null)
+            {
+                _context.Recipes.Remove(recipe);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index)); // Пренасочва обратно към списъка
+        }
     }
 }

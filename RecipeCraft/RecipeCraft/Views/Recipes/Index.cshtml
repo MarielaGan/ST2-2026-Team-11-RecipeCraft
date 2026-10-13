@@ -24,6 +24,7 @@
         </div>
     </form>
 
+    <!-- ОБЩИ БУТОНИ (ЗА ДЕЙСТВИЯ, КОИТО НЕ ИЗИСКВАТ КОНКРЕТНА РЕЦЕПТА) -->
     <div class="mb-3">
         <a asp-action="Create" class="btn btn-success">+ Добави нова рецепта</a>
         <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary ms-2">⚙️ Настройки (Singleton)</a>
@@ -37,13 +38,14 @@
                 <th>Категория</th>
                 <th>Време (мин)</th>
                 <th>Продукти</th>
+                <th class="text-center">Действия</th> <!-- Добавена колона за бутоните -->
             </tr>
         </thead>
         <tbody>
             @if (!Model.Any())
             {
                 <tr>
-                    <td colspan="4" class="text-center text-muted py-4">Няма намерени рецепти. Добавете първата си рецепта!</td>
+                    <td colspan="5" class="text-center text-muted py-4">Няма намерени рецепти. Добавете първата си рецепта!</td>
                 </tr>
             }
             else
@@ -55,6 +57,10 @@
                         <td><span class="badge bg-info text-dark">@item.Category</span></td>
                         <td>⏱️ @item.PrepTimeMinutes мин</td>
                         <td>@item.Ingredients</td>
+                        <td class="text-center">
+                            <!-- БУТОНЪТ ТРЯБВА ДА Е ТУК ВЪТРЕ В ЦИКЪЛА -->
+                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Изтрий</a>
+                        </td>
                     </tr>
                 }
             }
