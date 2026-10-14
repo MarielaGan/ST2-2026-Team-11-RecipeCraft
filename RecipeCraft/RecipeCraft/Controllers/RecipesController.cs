@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
 
 namespace RecipeCraft.Controllers
 {
-    public class RecipesController:Controller
+    public class RecipesController : Controller
     {
         private readonly ApplicationDbContext _context;
 
@@ -18,6 +19,8 @@ namespace RecipeCraft.Controllers
         // ==========================================
         // 1. SELECT WITH FILTER (Търсене и филтриране)
         // ==========================================
+        // Достъпно за ВСИЧКИ (включително нерегистрирани)
+        [AllowAnonymous]
         public async Task<IActionResult> Index(string? searchString, string? category)
         {
             var query = _context.Recipes.AsQueryable();
@@ -45,24 +48,23 @@ namespace RecipeCraft.Controllers
         // ==========================================
         // 2. INSERT (Добавяне на рецепта)
         // ==========================================
-
-        // GET: Показва формата за въвеждане
+        // Изисква потребителят да е ВЛЯЗЪЛ в профила си
+        [Authorize]
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Записва новата рецепта в базата данни
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Recipe recipe)
         {
-            // Проверка дали въведените данни отговарят на правилата в Model-а (Data Annotations)
             if (ModelState.IsValid)
             {
                 _context.Recipes.Add(recipe);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index)); // Пренасочва към списъка с рецепти
+                return RedirectToAction(nameof(Index));
             }
 
             return View(recipe);
@@ -71,8 +73,8 @@ namespace RecipeCraft.Controllers
         // ==========================================
         // 3. UPDATE (Редакция на рецепта)
         // ==========================================
-
-        // GET: Recipes/Edit/5 (Показва формата, попълнена със сегашните данни)
+        // Изисква потребителят да е ВЛЯЗЪЛ в профила си
+        [Authorize]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -89,8 +91,8 @@ namespace RecipeCraft.Controllers
             return View(recipe);
         }
 
-        // POST: Recipes/Edit/5 (Записва промените в базата данни)
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Recipe recipe)
         {
@@ -124,8 +126,8 @@ namespace RecipeCraft.Controllers
         // ==========================================
         // 4. DELETE (Изтриване на рецепта)
         // ==========================================
-
-        // GET: Recipes/Delete/5 (Показва страница за потвърждение)
+        // Достъпно САМО за Администратори (Role = Admin)
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -144,8 +146,8 @@ namespace RecipeCraft.Controllers
             return View(recipe);
         }
 
-        // POST: Recipes/Delete/5 (Извършва същинското изтриване от базата)
         [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
@@ -156,7 +158,7 @@ namespace RecipeCraft.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            return RedirectToAction(nameof(Index)); // Пренасочва обратно към списъка
+            return RedirectToAction(nameof(Index));
         }
     }
 }

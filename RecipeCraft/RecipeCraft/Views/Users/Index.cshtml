@@ -1,0 +1,81 @@
+﻿@model IEnumerable<RecipeCraft.Models.User>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>👥 Управление на потребители</h2>
+        <a asp-action="Create" class="btn btn-success">+ Нов потребител</a>
+    </div>
+
+    <!-- ФОРМА ЗА ТЪРСЕНЕ И ФИЛТРИРАНЕ -->
+    <form asp-action="Index" method="get" class="card card-body bg-light mb-4 shadow-sm">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]"
+                       class="form-control" placeholder="🔍 Търси по име, username или email..." />
+            </div>
+            <div class="col-md-4">
+                <select name="roleFilter" class="form-select">
+                    <option value="">-- Всички роли --</option>
+                    <option value="Admin" selected="@(ViewData["CurrentRole"]?.ToString() == "Admin")">Admin</option>
+                    <option value="User" selected="@(ViewData["CurrentRole"]?.ToString() == "User")">User</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Филтрирай</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Изчисти</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- ТАБЛИЦА С ПОТРЕБИТЕЛИ -->
+    <table class="table table-hover table-striped border shadow-sm align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Id</th>
+                <th>Username</th>
+                <th>Име и Фамилия</th>
+                <th>Email</th>
+                <th>Роля</th>
+                <th>Регистриран на</th>
+                <th class="text-center">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        Няма намерени потребители, отговарящи на критериите.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.Id</td>
+                        <td class="fw-bold">@user.Username</td>
+                        <td>@user.FirstName @user.LastName</td>
+                        <td>@user.Email</td>
+                        <td>
+                            @if (user.Role == "Admin")
+                            {
+                                <span class="badge bg-danger">Admin</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">User</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <a asp-action="Details" asp-route-id="@user.Id" class="btn btn-sm btn-outline-info">🔍 Преглед</a>
+                            <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-outline-warning">✏️ Редакция</a>
+                            <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-sm btn-outline-danger">🗑️ Изтрий</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

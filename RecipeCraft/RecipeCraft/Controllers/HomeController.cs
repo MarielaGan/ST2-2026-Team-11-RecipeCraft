@@ -8,6 +8,12 @@ namespace RecipeCraft.Controllers
     {
         public IActionResult Index()
         {
+            // Ако потребителят вече е влязъл, го препращаме директно към рецептите
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Index", "Recipes");
+            }
+
             return View();
         }
 
