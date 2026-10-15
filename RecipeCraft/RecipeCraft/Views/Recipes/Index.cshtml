@@ -1,21 +1,26 @@
 ﻿@model IEnumerable<RecipeCraft.Models.Recipe>
 
-<div class="container mt-4">
-    <h2>📜 Списък с рецепти</h2>
+@{
+    ViewData["Title"] = "Списък с рецепти";
+}
 
-    <!-- ФОРМА ЗА ФИЛТРИРАНЕ И ТЪРСЕНЕ -->
-    <form method="get" asp-action="Index" class="card card-body bg-light mb-4 mt-3">
-        <div class="row g-2">
+<div class="container mt-4">
+    <h2 class="mb-4">📜 Списък с рецепти</h2>
+
+    <!-- ФОРМА ЗА ТЪРСЕНЕ И ФИЛТРИРАНЕ -->
+    <form asp-action="Index" method="get" class="card card-body bg-light mb-4 shadow-sm">
+        <div class="row g-2 align-items-center">
             <div class="col-md-5">
-                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Търси по име или съставка..." />
+                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]"
+                       class="form-control" placeholder="Търси по име или съставка..." />
             </div>
             <div class="col-md-4">
                 <select name="category" class="form-select">
                     <option value="">-- Всички категории --</option>
-                    <option value="Основни">Основни</option>
-                    <option value="Десерти">Десерти</option>
-                    <option value="Супи">Супи</option>
-                    <option value="Салати">Салати</option>
+                    <option value="Основни" selected="@(ViewData["CurrentCategory"]?.ToString() == "Основни")">Основни</option>
+                    <option value="Супи" selected="@(ViewData["CurrentCategory"]?.ToString() == "Супи")">Супи</option>
+                    <option value="Десерти" selected="@(ViewData["CurrentCategory"]?.ToString() == "Десерти")">Десерти</option>
+                    <option value="Салати" selected="@(ViewData["CurrentCategory"]?.ToString() == "Салати")">Салати</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -24,15 +29,21 @@
         </div>
     </form>
 
-    @if (User.Identity != null && User.Identity.IsAuthenticated)
-    {
-        <div class="mb-3">
+    <!-- БУТОНИ: НОВА РЕЦЕПТА (САМО ЗА ВЛЕЗЛИ) И НАСТРОЙКИ (SINGLETON) -->
+    <div class="d-flex gap-2 mb-3">
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
             <a asp-action="Create" class="btn btn-success">+ Добави нова рецепта</a>
-        </div>
-    }
+        }
+
+        <!-- БУТОН КЪМ SINGLETON НАСТРОЙКИТЕ -->
+        <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary">
+            ⚙️ Настройки
+        </a>
+    </div>
 
     <!-- ТАБЛИЦА С РЕЦЕПТИ -->
-    <table class="table table-hover table-striped border">
+    <table class="table table-hover table-striped border shadow-sm align-middle">
         <thead class="table-dark">
             <tr>
                 <th>Име</th>
@@ -49,7 +60,9 @@
             @if (!Model.Any())
             {
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Няма намерени рецепти. Добавете първата си рецепта!</td>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        Няма намерени рецепти. Добавете първата си рецепта!
+                    </td>
                 </tr>
             }
             else
@@ -61,6 +74,7 @@
                         <td><span class="badge bg-info text-dark">@item.Category</span></td>
                         <td>⏱️ @item.PrepTimeMinutes мин</td>
                         <td>@item.Ingredients</td>
+
                         @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
                             <td class="text-center">

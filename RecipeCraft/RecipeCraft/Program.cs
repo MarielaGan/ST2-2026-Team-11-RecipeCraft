@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
 using RecipeCraft.Services;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,16 +62,16 @@ using (var scope = app.Services.CreateScope())
     // Ако няма нито един потребител с роля Admin, създаваме такъв
     if (!context.Users.Any(u => u.Role == "Admin"))
     {
+        var hasher = new PasswordHasher<RecipeCraft.Models.User>();
         var adminUser = new RecipeCraft.Models.User
         {
             Username = "admin",
             FirstName = "Главен",
             LastName = "Администратор",
             Email = "admin@recipecraft.com",
-            PasswordHash = "admin123", // Паролата за вход
             Role = "Admin"
         };
-
+        adminUser.PasswordHash = hasher.HashPassword(adminUser, "admin123");
         context.Users.Add(adminUser);
         context.SaveChanges();
     }

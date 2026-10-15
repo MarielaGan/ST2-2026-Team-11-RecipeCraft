@@ -91,14 +91,22 @@ namespace RecipeCraft.Controllers
 
             if (ModelState.IsValid)
             {
+                // 1. Създаваме PasswordHasher
+                var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
+
+                // 2. Хешираме паролата, въведена във формата (user.PasswordHash)
+                user.PasswordHash = hasher.HashPassword(user, user.PasswordHash);
+
+
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Index", "Home");
             }
+
             return View(user);
         }
 
-      
+
         // ==========================================
         // 4. EDIT (Редакция на потребител)
         // ==========================================

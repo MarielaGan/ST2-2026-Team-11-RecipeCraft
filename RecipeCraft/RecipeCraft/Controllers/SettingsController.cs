@@ -5,35 +5,36 @@ namespace RecipeCraft.Controllers
 {
     public class SettingsController : Controller
     {
+        // GET: /Settings
         public IActionResult Index()
         {
+            // Вземаме текущите настройки от Singleton инстанцията
             var settings = AppSettingsManager.Instance.Settings;
             return View(settings);
         }
 
-        // Запази новите настройки (Validate & Save)
+        // POST: /Settings/Update
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Index(AppSettingsModel model)
+        public IActionResult Update(AppSettingsModel model)
         {
-            // Използваме метода Validate от Singleton-а
+            // 1. Валидация през Singleton мениджъра
             var validationResults = AppSettingsManager.Instance.Validate(model);
-
-            if (!ModelState.IsValid || validationResults.Count > 0)
+            foreach (var result in validationResults)
             {
-                foreach (var validationResult in validationResults)
-                {
-                    ModelState.AddModelError("", validationResult.ErrorMessage ?? "Невалидна стойност");
-                }
-                return View(model);
+                ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Невалидни данни");
             }
 
-            // Запазваме чрез Singleton инстанцията
-            AppSettingsManager.Instance.Save(model);
-            ViewBag.SuccessMessage = "Настройките бяха успешно запазени!";
+            if (!ModelState.IsValid)
+            {
+                return View("Index", model);
+            }
 
-            return View(model);
+            // 2. Запазване в Singleton инстанцията и във файла appsettings_custom.json
+            AppSettingsManager.Instance.Save(model);
+
+            ViewBag.SuccessMessage = "Настройките бяха запазени успешно!";
+            return View("Index", model);
         }
     }
-
 }

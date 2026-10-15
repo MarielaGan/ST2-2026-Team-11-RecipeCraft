@@ -5,17 +5,11 @@ namespace RecipeCraft.Services
 {
     public class AppSettingsModel
     {
-        [Required(ErrorMessage = "Заглавието на сайта е задължително")]
-        [StringLength(50, MinimumLength = 3, ErrorMessage = "Заглавието трябва да е между 3 и 50 символа")]
-        public string SiteTitle { get; set; } = "RecipeCraft";
 
         [Range(1, 100, ErrorMessage = "Рецептите на страница трябва да са между 1 и 100")]
         public int RecipesPerPage { get; set; } = 10;
 
         public bool EnableAiAssistant { get; set; } = true;
-
-        [EmailAddress(ErrorMessage = "Невалиден имейл адрес за поддръжка")]
-        public string AdminEmail { get; set; } = "admin@recipecraft.com";
     }
 
     /// <summary>
