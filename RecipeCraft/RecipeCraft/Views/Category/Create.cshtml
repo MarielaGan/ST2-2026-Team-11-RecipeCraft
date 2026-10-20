@@ -1,0 +1,24 @@
+﻿@model RecipeCraft.Models.Category
+
+@{
+    ViewData["Title"] = "Нова Категория";
+}
+
+<div class="container mt-4">
+    <h2>Създаване на Категория</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <form asp-action="Create">
+                <div class="form-group mb-3">
+                    <label asp-for="Name" class="control-label">Име на категорията</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <button type="submit" class="btn btn-primary">Запази</button>
+                <a asp-action="Index" class="btn btn-secondary">Отказ</a>
+            </form>
+        </div>
+    </div>
+</div>

@@ -17,10 +17,15 @@
             <div class="col-md-4">
                 <select name="category" class="form-select">
                     <option value="">-- Всички категории --</option>
-                    <option value="Основни" selected="@(ViewData["CurrentCategory"]?.ToString() == "Основни")">Основни</option>
-                    <option value="Супи" selected="@(ViewData["CurrentCategory"]?.ToString() == "Супи")">Супи</option>
-                    <option value="Десерти" selected="@(ViewData["CurrentCategory"]?.ToString() == "Десерти")">Десерти</option>
-                    <option value="Салати" selected="@(ViewData["CurrentCategory"]?.ToString() == "Салати")">Салати</option>
+                    @if (ViewBag.Categories != null)
+                    {
+                        foreach (var cat in (IEnumerable<RecipeCraft.Models.Category>)ViewBag.Categories)
+                        {
+                            <option value="@cat.Name" selected="@(ViewData["CurrentCategory"]?.ToString() == cat.Name)">
+                                @cat.Name
+                            </option>
+                        }
+                    }
                 </select>
             </div>
             <div class="col-md-3">
@@ -29,11 +34,18 @@
         </div>
     </form>
 
-    <!-- БУТОНИ: НОВА РЕЦЕПТА (САМО ЗА ВЛЕЗЛИ) И НАСТРОЙКИ (SINGLETON) -->
+    <!-- БУТОНИ: НОВА РЕЦЕПТА, ДОБАВИ КАТЕГОРИЯ (АДМИН) И НАСТРОЙКИ -->
     <div class="d-flex gap-2 mb-3">
         @if (User.Identity != null && User.Identity.IsAuthenticated)
         {
             <a asp-action="Create" class="btn btn-success">+ Добави нова рецепта</a>
+
+            @if (User.IsInRole("Admin") || User.Identity.Name == "admin")
+            {
+                <a asp-controller="Category" asp-action="Create" class="btn btn-outline-primary">
+                    📂 Добави категория
+                </a>
+            }
         }
 
         <!-- БУТОН КЪМ SINGLETON НАСТРОЙКИТЕ -->
@@ -71,7 +83,11 @@
                 {
                     <tr>
                         <td class="fw-bold">@item.Title</td>
-                        <td><span class="badge bg-info text-dark">@item.Category</span></td>
+                        <td>
+                            <span class="badge bg-info text-dark">
+                                @(item.Category != null ? item.Category.Name : "Без категория")
+                            </span>
+                        </td>
                         <td>⏱️ @item.PrepTimeMinutes мин</td>
                         <td>@item.Ingredients</td>
 
@@ -80,7 +96,7 @@
                             <td class="text-center">
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning me-1">Редактирай</a>
 
-                                @if (User.IsInRole("Admin"))
+                                @if (User.IsInRole("Admin") || User.Identity.Name == "admin")
                                 {
                                     <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Изтрий</a>
                                 }

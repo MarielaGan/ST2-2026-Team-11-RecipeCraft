@@ -1,0 +1,57 @@
+﻿@model RecipeCraft.Services.AppSettingsModel
+
+@{
+    ViewData["Title"] = "Настройки на сайта";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white text-center py-3">
+                    <h3 class="mb-0">⚙️ Настройки на сайта</h3>
+                </div>
+                <div class="card-body p-4">
+
+                    @if (ViewBag.SuccessMessage != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @ViewBag.SuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <form asp-controller="Settings" asp-action="Update" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                        <!-- 1. Рецепти на страница -->
+                        <div class="mb-3">
+                            <label asp-for="RecipesPerPage" class="form-label fw-bold">Рецепти на страница</label>
+                            <input asp-for="RecipesPerPage" class="form-control" type="number" min="1" max="100" />
+                            <span asp-validation-for="RecipesPerPage" class="text-danger"></span>
+                        </div>
+
+                        <!-- 2. Активирай AI Асистент -->
+                        <div class="form-check mb-4">
+                            <input asp-for="EnableAiAssistant" class="form-check-input" type="checkbox" id="aiCheck" />
+                            <label class="form-check-label fw-bold" for="aiCheck">
+                                Активирай AI Асистент
+                            </label>
+                        </div>
+
+                        <!-- БУТОНИ: ЗАПАЗИ И НАЗАД -->
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Recipes" asp-action="Index" class="btn btn-outline-secondary w-50 py-2 fw-bold">
+                                Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary w-50 py-2 fw-bold">
+                                Запази настройките
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

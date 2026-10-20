@@ -19,6 +19,9 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Recipes" asp-action="Index">📖 Всички Рецепти</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Category" asp-action="Index">Категории (Админ)</a>
+                        </li>
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">

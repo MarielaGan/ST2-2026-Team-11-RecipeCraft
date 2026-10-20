@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
@@ -23,7 +24,8 @@ namespace RecipeCraft.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index(string? searchString, string? category)
         {
-            var query = _context.Recipes.AsQueryable();
+            // Използваме Include(r => r.Category), за да вземем свързаните данни за категорията
+            var query = _context.Recipes.Include(r => r.Category).AsQueryable();
 
             // Търсене по ключова дума в името или съставките
             if (!string.IsNullOrWhiteSpace(searchString))
@@ -34,8 +36,11 @@ namespace RecipeCraft.Controllers
             // Филтриране по категория
             if (!string.IsNullOrWhiteSpace(category))
             {
-                query = query.Where(r => r.Category == category);
+                query = query.Where(r => r.Category != null && r.Category.Name == category);
             }
+
+            // Зареждаме категориите за падащото меню за филтриране
+            ViewBag.Categories = await _context.Categories.ToListAsync();
 
             // Запазваме избраните филтри, за да се показват във формата във View-то
             ViewData["CurrentFilter"] = searchString;
@@ -50,8 +55,12 @@ namespace RecipeCraft.Controllers
         // ==========================================
         // Изисква потребителят да е ВЛЯЗЪЛ в профила си
         [Authorize]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            // Зареждаме категориите за падащото меню в Create View
+            var categories = await _context.Categories.ToListAsync();
+            ViewBag.CategoryId = new SelectList(categories, "Id", "Name");
+
             return View();
         }
 
@@ -66,6 +75,10 @@ namespace RecipeCraft.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
+            // При грешка във формата презареждаме категориите
+            var categories = await _context.Categories.ToListAsync();
+            ViewBag.CategoryId = new SelectList(categories, "Id", "Name", recipe.CategoryId);
 
             return View(recipe);
         }
@@ -87,6 +100,10 @@ namespace RecipeCraft.Controllers
             {
                 return NotFound();
             }
+
+            // Зареждаме категориите за падащото меню при редактиране
+            var categories = await _context.Categories.ToListAsync();
+            ViewBag.CategoryId = new SelectList(categories, "Id", "Name", recipe.CategoryId);
 
             return View(recipe);
         }
@@ -120,6 +137,10 @@ namespace RecipeCraft.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // При грешка във формата презареждаме категориите
+            var categories = await _context.Categories.ToListAsync();
+            ViewBag.CategoryId = new SelectList(categories, "Id", "Name", recipe.CategoryId);
+
             return View(recipe);
         }
 
@@ -136,6 +157,7 @@ namespace RecipeCraft.Controllers
             }
 
             var recipe = await _context.Recipes
+                .Include(r => r.Category)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (recipe == null)

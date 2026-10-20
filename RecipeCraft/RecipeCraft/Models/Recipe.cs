@@ -12,7 +12,9 @@ namespace RecipeCraft.Models
 
         [Required(ErrorMessage = "Категорията е задължителна")]
         [Display(Name = "Категория")]
-        public string Category { get; set; } = string.Empty; // напр. Основни, Десерти, Супи
+       
+        public int CategoryId { get; set; }
+        public Category? Category { get; set; }
 
         [Required(ErrorMessage = "Времето за приготвяне е задължително")]
         [Display(Name = "Време за приготвяне (мин)")]

@@ -1,0 +1,35 @@
+﻿@model IEnumerable<RecipeCraft.Models.Category>
+
+@{
+    ViewData["Title"] = "Управление на категории";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Категории</h2>
+        <a asp-action="Create" class="btn btn-success">+ Нова Категория</a>
+    </div>
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Име на категорията</th>
+                <th style="width: 200px;">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Редактирай</a>
+                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Сигурни ли сте, че искате да изтриете тази категория?');">
+                            <button type="submit" class="btn btn-sm btn-danger">Изтрий</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
