@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>RecipeCraft</RootNamespace>
+    <UserSecretsId>c4484f3f-63db-4f74-8472-1fbe4fe2009d</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
