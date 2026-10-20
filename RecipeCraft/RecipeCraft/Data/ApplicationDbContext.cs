@@ -10,7 +10,8 @@ namespace RecipeCraft.Data
 
         public DbSet<Recipe> Recipes { get; set; }
         public DbSet<User> Users { get; set; }
-        // Добавете тази линия:
+       
         public DbSet<Category> Categories { get; set; }
+        public DbSet<FavoriteRecipe> FavoriteRecipes { get; set; }
     }
 }

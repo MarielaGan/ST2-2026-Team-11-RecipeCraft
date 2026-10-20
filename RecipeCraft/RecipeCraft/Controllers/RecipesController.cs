@@ -57,6 +57,7 @@ namespace RecipeCraft.Controllers
         [Authorize]
         public async Task<IActionResult> Create()
         {
+
             // Зареждаме категориите за падащото меню в Create View
             var categories = await _context.Categories.ToListAsync();
             ViewBag.CategoryId = new SelectList(categories, "Id", "Name");
@@ -69,6 +70,9 @@ namespace RecipeCraft.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Recipe recipe)
         {
+
+            recipe.CreatedBy = User.Identity?.Name ?? "Анонимен";
+            recipe.CreatedOn = DateTime.Now;
             if (ModelState.IsValid)
             {
                 _context.Recipes.Add(recipe);

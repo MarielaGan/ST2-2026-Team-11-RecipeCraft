@@ -1,0 +1,44 @@
+﻿@model IEnumerable<RecipeCraft.Models.FavoriteRecipe>
+
+@{
+    ViewData["Title"] = "Любими рецепти";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">⭐ Моите Любими Рецепти</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            Все още нямате добавени любими рецепти. Можете да добавите такива от списъка с всички рецепти!
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var fav in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">@fav.Recipe?.Title</h5>
+                            <span class="badge bg-info text-dark mb-2">
+                                @(fav.Recipe?.Category != null ? fav.Recipe.Category.Name : "Без категория")
+                            </span>
+                            <p class="card-text text-muted">⏱️ @fav.Recipe?.PrepTimeMinutes мин</p>
+                            <p class="card-text"><strong>Продукти:</strong> @fav.Recipe?.Ingredients</p>
+                        </div>
+                        <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
+                            <form asp-controller="Favorites" asp-action="Toggle" method="post">
+                                <input type="hidden" name="recipeId" value="@fav.RecipeId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    ❌ Премахни от любими
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

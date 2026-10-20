@@ -15,6 +15,9 @@ namespace RecipeCraft.Models
        
         public int CategoryId { get; set; }
         public Category? Category { get; set; }
+        public string CreatedBy { get; set; } = string.Empty; // Потребителското име на автора
+        public DateTime CreatedOn { get; set; } = DateTime.Now; // Дата и час на създаване
+    
 
         [Required(ErrorMessage = "Времето за приготвяне е задължително")]
         [Display(Name = "Време за приготвяне (мин)")]

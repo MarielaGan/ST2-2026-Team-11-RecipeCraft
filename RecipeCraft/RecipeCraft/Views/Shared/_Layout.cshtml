@@ -19,13 +19,23 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Recipes" asp-action="Index">📖 Всички Рецепти</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Category" asp-action="Index">Категории (Админ)</a>
-                        </li>
-                        @if (User.IsInRole("Admin"))
+
+                        @* ЛИНК КЪМ ЛЮБИМИ РЕЦЕПТИ (САМО ЗА ВЛЕЗЛИ ПОТРЕБИТЕЛИ) *@
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-warning" asp-controller="Users" asp-action="Index">👥 Управление на Потребители</a>
+                                <a class="nav-link text-warning" asp-controller="Favorites" asp-action="Index">⭐ Любими</a>
+                            </li>
+                        }
+
+                        @* ЛИНК КЪМ КАТЕГОРИИ И ПОТРЕБИТЕЛИ (САМО ЗА АДМИН) *@
+                        @if (User.IsInRole("Admin") || User.Identity?.Name == "admin")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Category" asp-action="Index">📂 Категории</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-info" asp-controller="Users" asp-action="Index">👥 Управление на Потребители</a>
                             </li>
                         }
                     </ul>
