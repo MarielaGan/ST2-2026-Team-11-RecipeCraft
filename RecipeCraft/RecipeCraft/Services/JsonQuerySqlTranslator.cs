@@ -9,19 +9,31 @@ namespace RecipeCraft.Services
 
     public static class JsonQuerySqlTranslator
     {
-        private const string BaseSelect = "SELECT Id, Title, CategoryId, PrepTimeMinutes, Ingredients, Instructions FROM Recipes";
+        private const string BaseSelect = @"
+            SELECT r.Id, r.Title, r.CategoryId, r.PrepTimeMinutes, r.Ingredients, r.Instructions, r.CreatedBy, r.CreatedOn, r.ImageUrl 
+            FROM Recipes AS r
+            LEFT JOIN Categories AS c ON r.CategoryId = c.Id";
 
         private static readonly IReadOnlyDictionary<string, string> AllowedColumns =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                ["title"] = "Title",
-                ["заглавие"] = "Title",
-                ["име"] = "Title",
-                ["category"] = "CategoryId",
-                ["категория"] = "CategoryId",
-                ["ingredients"] = "Ingredients",
-                ["съставки"] = "Ingredients",
-                ["продукти"] = "Ingredients"
+                ["title"] = "r.Title",
+                ["заглавие"] = "r.Title",
+                ["име"] = "r.Title",
+                ["category"] = "c.Name",
+                ["категория"] = "c.Name",
+                ["ingredients"] = "r.Ingredients",
+                ["съставки"] = "r.Ingredients",
+                ["продукти"] = "r.Ingredients",
+                ["instructions"] = "r.Instructions",
+                ["инструкции"] = "r.Instructions",
+                ["начин на приготвяне"] = "r.Instructions",
+                ["preptimeminutes"] = "r.PrepTimeMinutes",
+                ["време"] = "r.PrepTimeMinutes",
+                ["време за приготвяне"] = "r.PrepTimeMinutes",
+                ["createdby"] = "r.CreatedBy",
+                ["автор"] = "r.CreatedBy",
+                ["createdon"] = "r.CreatedOn"
             };
 
         public static SqlSelectCommand Translate(JSONQuery query)
@@ -43,10 +55,28 @@ namespace RecipeCraft.Services
 
                 string paramName = $"$p{paramIndex++}";
                 string rawValue = cond.Value.Trim();
+                string op = (cond.Operator ?? "contains").ToLowerInvariant();
 
-                whereParts.Add($"LOWER({column}) LIKE LOWER({paramName})");
-                readableWhereParts.Add($"LOWER({column}) LIKE LOWER('%{rawValue}%')");
-                parameters[paramName] = $"%{rawValue}%";
+                if (column == "PrepTimeMinutes" && int.TryParse(rawValue, out int numericVal))
+                {
+                    string sqlOp = op switch
+                    {
+                        "lessthan" => "<",
+                        "greaterthan" => ">",
+                        "equals" => "=",
+                        _ => "<="
+                    };
+
+                    whereParts.Add($"{column} {sqlOp} {paramName}");
+                    readableWhereParts.Add($"{column} {sqlOp} {numericVal}");
+                    parameters[paramName] = numericVal;
+                }
+                else
+                {
+                    whereParts.Add($"LOWER({column}) LIKE LOWER({paramName})");
+                    readableWhereParts.Add($"LOWER({column}) LIKE LOWER('%{rawValue}%')");
+                    parameters[paramName] = $"%{rawValue}%";
+                }
             }
 
             string logicalOp = string.Equals(query.LogicalOperator, "OR", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND";
@@ -65,4 +95,3 @@ namespace RecipeCraft.Services
         }
     }
 }
-

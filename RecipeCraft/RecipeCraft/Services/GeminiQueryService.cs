@@ -17,21 +17,25 @@ namespace RecipeCraft.Services
 - ""Title"" (заглавие/име на рецептата)
 - ""Category"" (категория)
 - ""Ingredients"" (съставки)
+- ""Instructions"" (начин на приготвяне/инструкции)
+- ""PrepTimeMinutes"" (време за приготвяне в минути - числово)
+- ""CreatedBy"" (автор/потребителско име)
 
 Върни САМО валиден JSON обект със следната структура:
 {
   ""logicalOperator"": ""AND"" | ""OR"",
   ""conditions"": [
-    { ""field"": ""Title"" | ""Category"" | ""Ingredients"", ""operator"": ""contains"" | ""equals"", ""value"": ""стойност"" }
+    { ""field"": ""Title"" | ""Category"" | ""Ingredients"" | ""Instructions"" | ""PrepTimeMinutes"" | ""CreatedBy"", ""operator"": ""contains"" | ""equals"" | ""lessThan"" | ""greaterThan"", ""value"": ""стойност"" }
   ],
-  ""orderBy"": ""Title"" | ""Category"",
+  ""orderBy"": ""Title"" | ""Category"" | ""PrepTimeMinutes"" | ""CreatedOn"",
   ""sortDirection"": ""ASC"" | ""DESC"",
   ""limit"": null,
   ""explanation"": ""кратко обяснение на български език""
 }
 Правила:
-1. За търсене по съставка или име използвай ""contains"".
-2. По подразбиране logicalOperator e ""AND"", orderBy e ""Title"", sortDirection e ""ASC"".";
+1. За търсене по текстов текст (Title, Ingredients, Instructions, CreatedBy) използвай ""contains"".
+2. За числово търсене по времетраене (PrepTimeMinutes) използвай ""lessThan"", ""greaterThan"" или ""equals"".
+3. По подразбиране logicalOperator e ""AND"", orderBy e ""Title"", sortDirection e ""ASC"".";
 
         public GeminiQueryService(HttpClient http, IOptions<ExternalApisOptions> options)
         {
@@ -46,9 +50,11 @@ namespace RecipeCraft.Services
 
             var apiKey = _options.GeminiApiKey?.Trim();
             if (string.IsNullOrWhiteSpace(apiKey))
-                return GeminiQueryResult.Fail("Липсва Gemini API ключ в appsettings.Development.json.");
+                return GeminiQueryResult.Fail("Липсва Gemini API ключ в User Secrets.");
 
-            var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{_options.GeminiModel}:generateContent?key={apiKey}";
+            // Fallback за модела, за да предотвратим HTTP 404
+            var modelName = string.IsNullOrWhiteSpace(_options.GeminiModel) ? "gemini-1.5-flash" : _options.GeminiModel.Trim();
+            var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
 
             var requestBody = new
             {
@@ -60,16 +66,39 @@ namespace RecipeCraft.Services
             try
             {
                 var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-                // Използваме CancellationToken.None или контролен токен, за да избегнем прекъсване
-                var response = await _http.PostAsync(endpoint, jsonContent, CancellationToken.None);
+
+                // Retry Logic за сработване при HTTP 429 (Too Many Requests)
+                HttpResponseMessage response = null!;
+                int maxRetries = 3;
+                int delayMs = 2000;
+
+                for (int i = 0; i < maxRetries; i++)
+                {
+                    response = await _http.PostAsync(endpoint, jsonContent, cancellationToken);
+
+                    if ((int)response.StatusCode == 429 && i < maxRetries - 1)
+                    {
+                        await Task.Delay(delayMs, cancellationToken);
+                        delayMs *= 2;
+                        continue;
+                    }
+
+                    break;
+                }
 
                 if (!response.IsSuccessStatusCode)
                     return GeminiQueryResult.Fail($"Грешка от Gemini API (HTTP {(int)response.StatusCode}).");
 
-                var responseText = await response.Content.ReadAsStringAsync();
+                var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
                 using var doc = JsonDocument.Parse(responseText);
 
-                var rawText = doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString();
+                var rawText = doc.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString();
+
                 if (string.IsNullOrWhiteSpace(rawText))
                     return GeminiQueryResult.Fail("Празен отговор от ИИ.");
 
