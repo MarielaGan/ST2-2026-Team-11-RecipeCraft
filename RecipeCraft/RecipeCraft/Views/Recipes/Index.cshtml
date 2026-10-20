@@ -89,6 +89,7 @@
     <table class="table table-hover table-striped border shadow-sm align-middle">
         <thead class="table-dark">
             <tr>
+                <th>Снимка</th>
                 <th>Име</th>
                 <th>Категория</th>
                 <th>Време (мин)</th>
@@ -104,7 +105,7 @@
             @if (!Model.Any())
             {
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">
+                    <td colspan="7" class="text-center text-muted py-4">
                         Няма намерени рецепти. Добавете първата си рецепта!
                     </td>
                 </tr>
@@ -114,6 +115,18 @@
                 @foreach (var item in Model)
                 {
                     <tr>
+                        <!-- 1. НОВА КЛЕТКА ЗА СНИМКАТА (В САМОТО НАЧАЛО) -->
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" alt="@item.Title" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Няма снимка</span>
+                            }
+                        </td>
+
                         <td class="fw-bold">@item.Title</td>
                         <td>
                             <span class="badge bg-info text-dark">

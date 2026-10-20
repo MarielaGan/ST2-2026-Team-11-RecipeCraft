@@ -3,7 +3,7 @@
 <div class="container mt-4" style="max-width: 600px;">
     <h2>➕ Добавяне на нова рецепта</h2>
 
-    <form asp-action="Create" method="post" class="card card-body shadow-sm mt-3">
+    <form asp-action="Create" method="post" enctype="multipart/form-data" class="card card-body shadow-sm mt-3">
         <div class="mb-3">
             <label asp-for="Title" class="form-label fw-bold">Име на рецептата</label>
             <input asp-for="Title" class="form-control" placeholder="напр. Мусака" />
@@ -24,6 +24,12 @@
                 }
             </div>
             <span asp-validation-for="CategoryId" class="text-danger"></span>
+        </div>
+
+        <!-- ПОЛЕ ЗА СНИМКА -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Снимка на ястието</label>
+            <input type="file" name="imageFile" class="form-control" accept="image/*" />
         </div>
 
         <div class="mb-3">

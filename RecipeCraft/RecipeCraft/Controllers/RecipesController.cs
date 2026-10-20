@@ -12,12 +12,16 @@ namespace RecipeCraft.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IGeminiQueryService _geminiService;
+        private readonly IWebHostEnvironment _webHostEnvironment;
+
+     
 
         // Впръскване на DbContext и Gemini услугата чрез Dependency Injection
-        public RecipesController(ApplicationDbContext context, IGeminiQueryService geminiService)
+        public RecipesController(ApplicationDbContext context, IGeminiQueryService geminiService, IWebHostEnvironment webHostEnvironment)
         {
             _context = context;
             _geminiService = geminiService;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         // ==========================================
@@ -117,11 +121,34 @@ namespace RecipeCraft.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Recipe recipe)
+        public async Task<IActionResult> Create(Recipe recipe, IFormFile? imageFile)
         {
 
             recipe.CreatedBy = User.Identity?.Name ?? "Анонимен";
             recipe.CreatedOn = DateTime.Now;
+
+
+            // Обработка на качената снимка
+            if (imageFile != null && imageFile.Length > 0)
+            {
+                // Генерираме уникално име за файла, за да няма препокриване
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(imageFile.FileName);
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(fileStream);
+                }
+
+                // Записваме относителния път за визуализация в HTML
+                recipe.ImageUrl = "/uploads/" + uniqueFileName;
+            }
             if (ModelState.IsValid)
             {
                 _context.Recipes.Add(recipe);

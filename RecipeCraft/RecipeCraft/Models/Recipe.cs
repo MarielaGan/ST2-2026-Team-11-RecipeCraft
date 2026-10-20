@@ -17,7 +17,7 @@ namespace RecipeCraft.Models
         public Category? Category { get; set; }
         public string CreatedBy { get; set; } = string.Empty; // Потребителското име на автора
         public DateTime CreatedOn { get; set; } = DateTime.Now; // Дата и час на създаване
-    
+        public string? ImageUrl { get; set; } // Път до записаната снимка
 
         [Required(ErrorMessage = "Времето за приготвяне е задължително")]
         [Display(Name = "Време за приготвяне (мин)")]
