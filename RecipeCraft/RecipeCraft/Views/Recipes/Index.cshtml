@@ -7,7 +7,38 @@
 <div class="container mt-4">
     <h2 class="mb-4">📜 Списък с рецепти</h2>
 
-    <!-- ФОРМА ЗА ТЪРСЕНЕ И ФИЛТРИРАНЕ -->
+    <!-- 1. ТЪРСЕНЕ НА ЕСТЕСТВЕН ЕЗИК С GEMINI AI -->
+    <div class="card mb-4 border-warning shadow-sm">
+        <div class="card-header bg-warning bg-gradient text-dark fw-bold d-flex align-items-center justify-content-between">
+            <span>✨ Умно търсене с Gemini AI</span>
+            @if (!string.IsNullOrWhiteSpace(ViewBag.AiQuery))
+            {
+                <span class="badge bg-dark">Активен ИИ филтър</span>
+            }
+        </div>
+        <div class="card-body">
+            <form asp-action="Index" method="get">
+                <div class="input-group">
+                    <input type="text" name="aiQuery" value="@ViewBag.AiQuery" class="form-control"
+                           placeholder="Напр.: 'намери десерти с ягоди' или 'бързи супи'..." />
+                    <button type="submit" class="btn btn-dark">Търси с AI 🤖</button>
+                    @if (!string.IsNullOrWhiteSpace(ViewBag.AiQuery))
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary">Изчисти</a>
+                    }
+                </div>
+            </form>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger mt-3 mb-0" role="alert">
+                    <strong>Предупреждение:</strong> @ViewBag.Error
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 2. СТАНДАРТНА ФОРМА ЗА ТЪРСЕНЕ И ФИЛТРИРАНЕ -->
     <form asp-action="Index" method="get" class="card card-body bg-light mb-4 shadow-sm">
         <div class="row g-2 align-items-center">
             <div class="col-md-5">
@@ -34,7 +65,7 @@
         </div>
     </form>
 
-    <!-- БУТОНИ: НОВА РЕЦЕПТА, ДОБАВИ КАТЕГОРИЯ (АДМИН) И НАСТРОЙКИ -->
+    <!-- 3. БУТОНИ: НОВА РЕЦЕПТА, ДОБАВИ КАТЕГОРИЯ (АДМИН) И НАСТРОЙКИ -->
     <div class="d-flex gap-2 mb-3">
         @if (User.Identity != null && User.Identity.IsAuthenticated)
         {
@@ -54,7 +85,7 @@
         </a>
     </div>
 
-    <!-- ТАБЛИЦА С РЕЦЕПТИ -->
+    <!-- 4. ТАБЛИЦА С РЕЦЕПТИ -->
     <table class="table table-hover table-striped border shadow-sm align-middle">
         <thead class="table-dark">
             <tr>

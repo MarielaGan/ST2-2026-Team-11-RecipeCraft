@@ -4,49 +4,98 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
+using RecipeCraft.Services;
 
 namespace RecipeCraft.Controllers
 {
     public class RecipesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IGeminiQueryService _geminiService;
 
-        // Впръскване на DbContext чрез Dependency Injection
-        public RecipesController(ApplicationDbContext context)
+        // Впръскване на DbContext и Gemini услугата чрез Dependency Injection
+        public RecipesController(ApplicationDbContext context, IGeminiQueryService geminiService)
         {
             _context = context;
+            _geminiService = geminiService;
         }
 
         // ==========================================
-        // 1. SELECT WITH FILTER (Търсене и филтриране)
+        // 1. SELECT WITH FILTER & GEMINI AI SEARCH
         // ==========================================
-        // Достъпно за ВСИЧКИ (включително нерегистрирани)
         [AllowAnonymous]
-        public async Task<IActionResult> Index(string? searchString, string? category)
+        public async Task<IActionResult> Index(string? searchString, string? category, string? aiQuery)
         {
-            // Използваме Include(r => r.Category), за да вземем свързаните данни за категорията
+            // Зареждаме категориите за падащото меню
+            ViewBag.Categories = await _context.Categories.ToListAsync();
+
+            // Запазваме текущите стойности във ViewData / ViewBag за View-то
+            ViewData["CurrentFilter"] = searchString;
+            ViewData["CurrentCategory"] = category;
+            ViewBag.AiQuery = aiQuery;
+
+            // --- Търсене на естествен език чрез Gemini AI ---
+            if (!string.IsNullOrWhiteSpace(aiQuery))
+            {
+                string trimmedQuery = aiQuery.Trim();
+
+                // Подаваме CancellationToken.None, за да предпазим заявката от преждевременно прекъсване
+                var geminiResult = await _geminiService.GenerateJsonQueryAsync(trimmedQuery, CancellationToken.None);
+
+                if (!geminiResult.IsSuccess || geminiResult.Query is null)
+                {
+                    ViewBag.Error = geminiResult.Error ?? "Възникна грешка при обработката на заявката от ИИ.";
+                    return View(await _context.Recipes.Include(r => r.Category).ToListAsync());
+                }
+
+                try
+                {
+                    // Превеждаме JSONQuery до параметризирана SQL команда
+                    var sqlCommand = JsonQuerySqlTranslator.Translate(geminiResult.Query);
+
+                    // Преобразуваме параметрите в SqliteParameter за Entity Framework Core
+                    var sqlParams = sqlCommand.Parameters
+                        .Select(p => new Microsoft.Data.Sqlite.SqliteParameter(p.Key, p.Value))
+                        .ToArray();
+
+                    // Изпълняваме параметризирания SQL през EF Core
+                    var aiRecipes = await _context.Recipes
+                        .FromSqlRaw(sqlCommand.Sql, sqlParams)
+                        .Include(r => r.Category)
+                        .ToListAsync();
+
+                    // Подаваме диагностичните данни към View-то (за демонстрацията пред преподавателя)
+                    ViewBag.RawJson = geminiResult.RawJson;
+                    ViewBag.GeneratedSql = sqlCommand.ReadableSql;
+                    ViewBag.Explanation = geminiResult.Query.Explanation;
+
+                    return View(aiRecipes);
+                }
+                catch (ArgumentException ex)
+                {
+                    ViewBag.Error = $"Грешка при превод на JSONQuery към SQL: {ex.Message}";
+                    return View(await _context.Recipes.Include(r => r.Category).ToListAsync());
+                }
+                catch (Exception ex)
+                {
+                    ViewBag.Error = $"Възникна системна грешка: {ex.Message}";
+                    return View(await _context.Recipes.Include(r => r.Category).ToListAsync());
+                }
+            }
+
+            // --- Стандартно филтриране (без ИИ) ---
             var query = _context.Recipes.Include(r => r.Category).AsQueryable();
 
-            // Търсене по ключова дума в името или съставките
             if (!string.IsNullOrWhiteSpace(searchString))
             {
                 query = query.Where(r => r.Title.Contains(searchString) || r.Ingredients.Contains(searchString));
             }
 
-            // Филтриране по категория
             if (!string.IsNullOrWhiteSpace(category))
             {
                 query = query.Where(r => r.Category != null && r.Category.Name == category);
             }
 
-            // Зареждаме категориите за падащото меню за филтриране
-            ViewBag.Categories = await _context.Categories.ToListAsync();
-
-            // Запазваме избраните филтри, за да се показват във формата във View-то
-            ViewData["CurrentFilter"] = searchString;
-            ViewData["CurrentCategory"] = category;
-
-            // Връщаме списъка с намерените рецепти
             return View(await query.ToListAsync());
         }
 

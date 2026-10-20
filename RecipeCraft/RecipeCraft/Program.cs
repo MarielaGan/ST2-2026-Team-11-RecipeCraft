@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
+using RecipeCraft.Models;
 using RecipeCraft.Services;
-using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,54 +17,36 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // 2. Регистрация на Singleton за AppSettings
 builder.Services.AddSingleton(AppSettingsManager.Instance);
 
-// 1. Добавяме Cookie Authentication
+// 3. Регистрация на ExternalApis опциите (чете от appsettings.json и appsettings.Development.json)
+builder.Services.Configure<ExternalApisOptions>(
+    builder.Configuration.GetSection(ExternalApisOptions.SectionName));
+
+// 4. Регистрация на Gemini HTTP услугата (IGeminiQueryService)
+builder.Services.AddHttpClient<IGeminiQueryService, GeminiQueryService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+// 5. Добавяне на Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Account/Login"; // Къде да препраща, ако потребителят не е влязъл
-        options.AccessDeniedPath = "/Account/AccessDenied"; // Къде да препраща при липса на права
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
 var app = builder.Build();
 
-// 3. АВТОМАТИЧНО СЪЗДАВАНЕ НА БАЗАТА ДАННИ
-// Този блок проверява дали файлът recipecraft.db съществува и ако го няма, го създава сам!
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.EnsureCreated();
-}
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapStaticAssets();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
+// 6. АВТОМАТИЧНО СЪЗДАВАНЕ НА БАЗАТА ДАННИ И АДМИН ПОТРЕБИТЕЛ
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    // Уверяваме се, че базата данни е създадена
     context.Database.EnsureCreated();
 
-    // Ако няма нито един потребител с роля Admin, създаваме такъв
     if (!context.Users.Any(u => u.Role == "Admin"))
     {
-        var hasher = new PasswordHasher<RecipeCraft.Models.User>();
-        var adminUser = new RecipeCraft.Models.User
+        var hasher = new PasswordHasher<User>();
+        var adminUser = new User
         {
             Username = "admin",
             FirstName = "Главен",
@@ -76,5 +59,23 @@ using (var scope = app.Services.CreateScope())
         context.SaveChanges();
     }
 }
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
