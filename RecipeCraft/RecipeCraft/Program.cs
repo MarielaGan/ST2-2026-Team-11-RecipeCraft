@@ -27,12 +27,14 @@ builder.Services.AddHttpClient<IGeminiQueryService, GeminiQueryService>(client =
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-// 5. Добавяне на Cookie Authentication
+// 5. Добавяне на Cookie Authentication (С коригирани пътища към UsersController)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Account/Login";
-        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.LoginPath = "/Users/Login";
+        options.LogoutPath = "/Users/Logout";
+        options.AccessDeniedPath = "/Users/Login";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
     });
 
 var app = builder.Build();
@@ -69,8 +71,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
 
+// Задължителен ред на middleware за автентикация
 app.UseAuthentication();
 app.UseAuthorization();
 

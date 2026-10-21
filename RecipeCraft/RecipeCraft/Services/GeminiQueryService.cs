@@ -52,7 +52,7 @@ namespace RecipeCraft.Services
             if (string.IsNullOrWhiteSpace(apiKey))
                 return GeminiQueryResult.Fail("Липсва Gemini API ключ в User Secrets.");
 
-            // Fallback за модела, за да предотвратим HTTP 404
+            // Използваме gemini-1.5-flash по подразбиране
             var modelName = string.IsNullOrWhiteSpace(_options.GeminiModel) ? "gemini-1.5-flash" : _options.GeminiModel.Trim();
             var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
 
@@ -67,7 +67,6 @@ namespace RecipeCraft.Services
             {
                 var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-                // Retry Logic за сработване при HTTP 429 (Too Many Requests)
                 HttpResponseMessage response = null!;
                 int maxRetries = 3;
                 int delayMs = 2000;
@@ -76,6 +75,7 @@ namespace RecipeCraft.Services
                 {
                     response = await _http.PostAsync(endpoint, jsonContent, cancellationToken);
 
+                    // Коригирано от maxRetries1 на maxRetries - 1
                     if ((int)response.StatusCode == 429 && i < maxRetries - 1)
                     {
                         await Task.Delay(delayMs, cancellationToken);

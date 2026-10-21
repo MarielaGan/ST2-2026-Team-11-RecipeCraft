@@ -4,6 +4,6 @@
     {
         public const string SectionName = "ExternalApis";
         public string? GeminiApiKey { get; set; }
-        public string GeminiModel { get; set; } = "gemini-3.5-flash";
+        public string GeminiModel { get; set; } = "gemini-3-flash-preview";
     }
 }

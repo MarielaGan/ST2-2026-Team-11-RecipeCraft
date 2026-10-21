@@ -2,12 +2,9 @@
 
 <div class="container mt-4" style="max-width: 600px;">
     <div class="card shadow-sm p-4">
-        <h2>👤 Преглед на потребител</h2>
+        <h2>👤 Преглед на профил</h2>
         <hr />
         <dl class="row">
-            <dt class="col-sm-4">Id:</dt>
-            <dd class="col-sm-8">@Model.Id</dd>
-
             <dt class="col-sm-4">Username:</dt>
             <dd class="col-sm-8">@Model.Username</dd>
 
@@ -17,12 +14,25 @@
             <dt class="col-sm-4">Email:</dt>
             <dd class="col-sm-8">@Model.Email</dd>
 
-            <dt class="col-sm-4">PasswordHash:</dt>
-            <dd class="col-sm-8"><code>@Model.PasswordHash</code></dd>
+            <dt class="col-sm-4">Роля:</dt>
+            <dd class="col-sm-8"><span class="badge bg-info text-dark">@Model.Role</span></dd>
         </dl>
 
-        <div class="mt-3">
-            <a asp-action="Index" class="btn btn-secondary">Назад</a>
+        <div class="d-flex justify-content-between mt-4">
+            @if (User.IsInRole("Admin") || User.Identity?.Name == "admin")
+            {
+                <a asp-action="Index" class="btn btn-secondary">Назад към списъка</a>
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Редактирай</a>
+            }
+            else
+            {
+                <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Към начална страница</a>
+                <a asp-action="EditProfile" class="btn btn-warning">✏️ Редактирай профила</a>
+                
+                <form asp-action="DeleteProfile" method="post" onsubmit="return confirm('Сигурни ли сте, че искате да изтриете профила си?');" class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger">🗑️ Изтрий</button>
+                </form>
+            }
         </div>
     </div>
 </div>
