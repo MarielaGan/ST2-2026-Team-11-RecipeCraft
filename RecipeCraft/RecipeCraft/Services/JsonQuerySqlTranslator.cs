@@ -1,4 +1,5 @@
 ﻿using RecipeCraft.Models;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RecipeCraft.Services
 {
@@ -43,33 +44,46 @@ namespace RecipeCraft.Services
             var whereParts = new List<string>();
             var readableWhereParts = new List<string>();
             var parameters = new Dictionary<string, object>();
+            var conditions = query.Conditions ?? new List<QueryCondition>();
             int paramIndex = 0;
 
-            foreach (var cond in query.Conditions ?? new())
+            foreach (var cond in conditions)
             {
-                if (string.IsNullOrWhiteSpace(cond.Field) || string.IsNullOrWhiteSpace(cond.Value))
+                if (cond is null || string.IsNullOrWhiteSpace(cond.Field) || string.IsNullOrWhiteSpace(cond.Value))
                     continue;
 
-                if (!AllowedColumns.TryGetValue(cond.Field.Trim(), out var column))
-                    throw new ArgumentException($"Непозволена колона за търсене: '{cond.Field}'");
-
+                var column = ResolveColumn(cond.Field);
                 string paramName = $"$p{paramIndex++}";
                 string rawValue = cond.Value.Trim();
-                string op = (cond.Operator ?? "contains").ToLowerInvariant();
+                string op = (cond.Operator ?? "contains").Trim().ToLowerInvariant();
 
-                if (column == "PrepTimeMinutes" && int.TryParse(rawValue, out int numericVal))
+                if (column == "r.PrepTimeMinutes" && int.TryParse(rawValue, out int numericVal))
                 {
+                    
                     string sqlOp = op switch
                     {
-                        "lessthan" => "<",
-                        "greaterthan" => ">",
-                        "equals" => "=",
-                        _ => "<="
+                        "equals" or "eq" or "=" or "contains" => "=",
+                        "notequals" or "neq" or "!=" or "<>" => "<>",
+                        "gt" or ">" => ">",
+                        "lt" or "<" => "<",
+                        "gte" or ">=" => ">=",
+                        "lte" or "<=" => "<=",
+                        _ => throw new ArgumentException($"Неподдържан оператор'{cond.Operator}' за числовата колона PrepTimeMinutes.")
                     };
 
                     whereParts.Add($"{column} {sqlOp} {paramName}");
                     readableWhereParts.Add($"{column} {sqlOp} {numericVal}");
                     parameters[paramName] = numericVal;
+                }
+                else if (column == "r.Ingredients" || column == "Ingredients")
+                {
+                    string paramNameTitle = $"$p{paramIndex++}";
+
+                    whereParts.Add($"(LOWER({column}) LIKE LOWER({paramName}) OR LOWER(r.Title) LIKE LOWER({paramNameTitle}))");
+                    readableWhereParts.Add($"(LOWER({column}) LIKE LOWER('%{rawValue}%') OR LOWER(r.Title) LIKE LOWER('%{rawValue}%'))");
+
+                    parameters[paramName] = $"%{rawValue}%";
+                    parameters[paramNameTitle] = $"%{rawValue}%";
                 }
                 else
                 {
@@ -79,11 +93,11 @@ namespace RecipeCraft.Services
                 }
             }
 
-            string logicalOp = string.Equals(query.LogicalOperator, "OR", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND";
+            var logicalOp = NormalizeLogicalOperator(query.LogicalOperator);
             string whereSql = whereParts.Count > 0 ? " WHERE " + string.Join($" {logicalOp} ", whereParts) : "";
             string readableWhereSql = readableWhereParts.Count > 0 ? " WHERE " + string.Join($" {logicalOp} ", readableWhereParts) : "";
 
-            string orderByCol = AllowedColumns.TryGetValue(query.OrderBy ?? "", out var col) ? col : "Title";
+            string orderByCol = AllowedColumns.TryGetValue(query.OrderBy ?? "", out var col) ? col : "r.Title";
             string sortDir = string.Equals(query.SortDirection, "DESC", StringComparison.OrdinalIgnoreCase) ? "DESC" : "ASC";
             string orderSql = $" ORDER BY {orderByCol} {sortDir}";
 
@@ -92,6 +106,32 @@ namespace RecipeCraft.Services
                 Parameters: parameters,
                 ReadableSql: BaseSelect + readableWhereSql + orderSql
             );
+        }
+        private static string ResolveColumn(string field)
+        {
+            var trimmed = field.Trim();
+            if (AllowedColumns.TryGetValue(trimmed, out var column))
+            {
+                return column;
+            }
+
+            throw new ArgumentException($"Невалидно или непозволено име на колона: '{field}'.");
+        }
+
+        private static string NormalizeLogicalOperator(string? logicalOperator)
+        {
+            if (string.IsNullOrWhiteSpace(logicalOperator))
+            {
+                return "AND";
+            }
+
+            var normalized = logicalOperator.Trim().ToUpperInvariant();
+            return normalized switch
+            {
+                "AND" or "И" => "AND",
+                "OR" or "ИЛИ" => "OR",
+                _ => throw new ArgumentException($"Невалиден логически оператор: '{logicalOperator}'. Позволени са само AND и OR.")
+            };
         }
     }
 }

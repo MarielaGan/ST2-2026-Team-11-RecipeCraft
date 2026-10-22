@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using RecipeCraft.Configuration;
 using RecipeCraft.Models;
 
 namespace RecipeCraft.Services
@@ -75,7 +76,6 @@ namespace RecipeCraft.Services
                 {
                     response = await _http.PostAsync(endpoint, jsonContent, cancellationToken);
 
-                    // Коригирано от maxRetries1 на maxRetries - 1
                     if ((int)response.StatusCode == 429 && i < maxRetries - 1)
                     {
                         await Task.Delay(delayMs, cancellationToken);

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using RecipeCraft.Configuration;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
 using RecipeCraft.Services;

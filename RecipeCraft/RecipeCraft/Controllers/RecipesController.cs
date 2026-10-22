@@ -69,7 +69,7 @@ namespace RecipeCraft.Controllers
                         .Include(r => r.Category)
                         .ToListAsync();
 
-                    // Подаваме диагностичните данни към View-то (за демонстрацията пред преподавателя)
+                    // Подаваме диагностичните данни към View-то
                     ViewBag.RawJson = geminiResult.RawJson;
                     ViewBag.GeneratedSql = sqlCommand.ReadableSql;
                     ViewBag.Explanation = geminiResult.Query.Explanation;
