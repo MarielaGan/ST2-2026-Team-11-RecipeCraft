@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
 using RecipeCraft.Services;
+using System.Security.Claims;
 
 namespace RecipeCraft.Controllers
 {
@@ -164,24 +165,25 @@ namespace RecipeCraft.Controllers
         }
 
         // ==========================================
-        // 3. UPDATE (Редакция на рецепта)
+        // EDIT (Редакция на рецепта)
         // ==========================================
-        // Изисква потребителят да е ВЛЯЗЪЛ в профила си
         [Authorize]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var recipe = await _context.Recipes.FindAsync(id);
-            if (recipe == null)
+            if (recipe == null) return NotFound();
+
+            // Проверка за собственост: Трябва да е авторът ИЛИ Admin
+            var currentUsername = User.Identity?.Name;
+            bool isAdmin = User.IsInRole("Admin") || currentUsername == "admin";
+
+            if (recipe.CreatedBy != currentUsername && !isAdmin)
             {
-                return NotFound();
+                return Forbid(); // Забранява достъпа, ако не е негова рецепта
             }
 
-            // Зареждаме категориите за падащото меню при редактиране
             var categories = await _context.Categories.ToListAsync();
             ViewBag.CategoryId = new SelectList(categories, "Id", "Name", recipe.CategoryId);
 
@@ -191,11 +193,47 @@ namespace RecipeCraft.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Recipe recipe)
+        public async Task<IActionResult> Edit(int id, Recipe recipe, IFormFile? imageFile)
         {
-            if (id != recipe.Id)
+            if (id != recipe.Id) return NotFound();
+
+            var existingRecipe = await _context.Recipes.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            if (existingRecipe == null) return NotFound();
+
+            // Защита при POST: Проверка дали потребителят не се опитва да редактира чужда рецепта през заявка
+            var currentUsername = User.Identity?.Name;
+            bool isAdmin = User.IsInRole("Admin") || currentUsername == "admin";
+
+            if (existingRecipe.CreatedBy != currentUsername && !isAdmin)
             {
-                return NotFound();
+                return Forbid();
+            }
+
+            recipe.CreatedBy = existingRecipe.CreatedBy;
+            recipe.CreatedOn = existingRecipe.CreatedOn;
+
+            if (recipe.CategoryId == 0)
+            {
+                recipe.CategoryId = existingRecipe.CategoryId;
+            }
+
+            if (imageFile != null && imageFile.Length > 0)
+            {
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(imageFile.FileName);
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(fileStream);
+                }
+                recipe.ImageUrl = "/uploads/" + uniqueFileName;
+            }
+            else
+            {
+                recipe.ImageUrl = existingRecipe.ImageUrl;
             }
 
             if (ModelState.IsValid)
@@ -207,17 +245,13 @@ namespace RecipeCraft.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!await _context.Recipes.AnyAsync(r => r.Id == id))
-                    {
-                        return NotFound();
-                    }
+                    if (!await _context.Recipes.AnyAsync(r => r.Id == id)) return NotFound();
                     throw;
                 }
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(MyRecipes));
             }
 
-            // При грешка във формата презареждаме категориите
             var categories = await _context.Categories.ToListAsync();
             ViewBag.CategoryId = new SelectList(categories, "Id", "Name", recipe.CategoryId);
 
@@ -225,42 +259,75 @@ namespace RecipeCraft.Controllers
         }
 
         // ==========================================
-        // 4. DELETE (Изтриване на рецепта)
+        // DELETE (Изтриване на рецепта)
         // ==========================================
-        // Достъпно САМО за Администратори (Role = Admin)
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var recipe = await _context.Recipes
                 .Include(r => r.Category)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (recipe == null)
+            if (recipe == null) return NotFound();
+
+            // Проверка за собственост
+            var currentUsername = User.Identity?.Name;
+            bool isAdmin = User.IsInRole("Admin") || currentUsername == "admin";
+
+            if (recipe.CreatedBy != currentUsername && !isAdmin)
             {
-                return NotFound();
+                return Forbid();
             }
 
             return View(recipe);
         }
 
         [HttpPost, ActionName("Delete")]
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var recipe = await _context.Recipes.FindAsync(id);
             if (recipe != null)
             {
+                var currentUsername = User.Identity?.Name;
+                bool isAdmin = User.IsInRole("Admin") || currentUsername == "admin";
+
+                if (recipe.CreatedBy != currentUsername && !isAdmin)
+                {
+                    return Forbid();
+                }
+
                 _context.Recipes.Remove(recipe);
                 await _context.SaveChangesAsync();
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(MyRecipes));
+        }
+        // ==========================================
+        // MY RECIPES (Рецепти на текущо влезлия потребител)
+        // ==========================================
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> MyRecipes()
+        {
+            // Взимаме потребителското име на текущо логнатия потребител
+            var currentUsername = User.Identity?.Name;
+            if (string.IsNullOrEmpty(currentUsername))
+            {
+                return RedirectToAction("Login", "Users");
+            }
+
+            // Филтрираме рецептите по CreatedBy
+            var myRecipes = await _context.Recipes
+                .Include(r => r.Category)
+                .Where(r => r.CreatedBy == currentUsername)
+                .OrderByDescending(r => r.CreatedOn)
+                .ToListAsync();
+
+            return View("Index", myRecipes);
         }
     }
 }

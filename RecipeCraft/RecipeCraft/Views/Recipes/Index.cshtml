@@ -1,42 +1,46 @@
-﻿@model IEnumerable<RecipeCraft.Models.Recipe>
+﻿@using RecipeCraft.Services
+@model IEnumerable<RecipeCraft.Models.Recipe>
 
 @{
     ViewData["Title"] = "Списък с рецепти";
 }
 
 <div class="container mt-4">
-    <h2 class="mb-4">📜 Списък с рецепти</h2>
+    <h2 class="mb-4">Списък с рецепти</h2>
 
-    <!-- 1. ТЪРСЕНЕ НА ЕСТЕСТВЕН ЕЗИК С GEMINI AI -->
-    <div class="card mb-4 border-warning shadow-sm">
-        <div class="card-header bg-warning bg-gradient text-dark fw-bold d-flex align-items-center justify-content-between">
-            <span>✨ Умно търсене с Gemini AI</span>
-            @if (!string.IsNullOrWhiteSpace(ViewBag.AiQuery))
-            {
-                <span class="badge bg-dark">Активен ИИ филтър</span>
-            }
-        </div>
-        <div class="card-body">
-            <form asp-action="Index" method="get">
-                <div class="input-group">
-                    <input type="text" name="aiQuery" value="@ViewBag.AiQuery" class="form-control"
-                           placeholder="Напр.: 'намери десерти с ягоди' или 'бързи супи'..." />
-                    <button type="submit" class="btn btn-dark">Търси с AI 🤖</button>
-                    @if (!string.IsNullOrWhiteSpace(ViewBag.AiQuery))
-                    {
-                        <a asp-action="Index" class="btn btn-outline-secondary">Изчисти</a>
-                    }
-                </div>
-            </form>
+    <!-- 1. ТЪРСЕНЕ НА ЕСТЕСТВЕН ЕЗИК С GEMINI AI (ПОКАЗВА СЕ САМО АКО Е АКТИВИРАНО) -->
+    @if (AppSettingsManager.Instance.Settings.EnableAiAssistant)
+    {
+        <div class="card mb-4 border-warning shadow-sm">
+            <div class="card-header bg-warning bg-gradient text-dark fw-bold d-flex align-items-center justify-content-between">
+                <span>Умно търсене с Gemini AI</span>
+                @if (!string.IsNullOrWhiteSpace(ViewBag.AiQuery))
+                {
+                    <span class="badge bg-dark">Активен ИИ филтър</span>
+                }
+            </div>
+            <div class="card-body">
+                <form asp-action="Index" method="get">
+                    <div class="input-group">
+                        <input type="text" name="aiQuery" value="@ViewBag.AiQuery" class="form-control"
+                               placeholder="Напр.: 'намери десерти с ягоди' или 'бързи супи'..." />
+                        <button type="submit" class="btn btn-dark">Търси с AI</button>
+                        @if (!string.IsNullOrWhiteSpace(ViewBag.AiQuery))
+                        {
+                            <a asp-action="Index" class="btn btn-outline-secondary">Изчисти</a>
+                        }
+                    </div>
+                </form>
 
-            @if (ViewBag.Error != null)
-            {
-                <div class="alert alert-danger mt-3 mb-0" role="alert">
-                    <strong>Предупреждение:</strong> @ViewBag.Error
-                </div>
-            }
+                @if (ViewBag.Error != null)
+                {
+                    <div class="alert alert-danger mt-3 mb-0" role="alert">
+                        <strong>Предупреждение:</strong> @ViewBag.Error
+                    </div>
+                }
+            </div>
         </div>
-    </div>
+    }
 
     <!-- 2. СТАНДАРТНА ФОРМА ЗА ТЪРСЕНЕ И ФИЛТРИРАНЕ -->
     <form asp-action="Index" method="get" class="card card-body bg-light mb-4 shadow-sm">
@@ -74,14 +78,14 @@
             @if (User.IsInRole("Admin") || User.Identity.Name == "admin")
             {
                 <a asp-controller="Category" asp-action="Create" class="btn btn-outline-primary">
-                    📂 Добави категория
+                    Добави категория
                 </a>
             }
         }
 
         <!-- БУТОН КЪМ SINGLETON НАСТРОЙКИТЕ -->
         <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary">
-            ⚙️ Настройки
+            Настройки
         </a>
     </div>
 
@@ -94,7 +98,7 @@
                 <th>Категория</th>
                 <th>Време (мин)</th>
                 <th>Продукти</th>
-                <th>Автор / Дата</th> 
+                <th>Автор / Дата</th>
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
                     <th class="text-center">Действия</th>
@@ -115,7 +119,6 @@
                 @foreach (var item in Model)
                 {
                     <tr>
-                        <!-- 1. НОВА КЛЕТКА ЗА СНИМКАТА (В САМОТО НАЧАЛО) -->
                         <td>
                             @if (!string.IsNullOrEmpty(item.ImageUrl))
                             {
@@ -133,30 +136,27 @@
                                 @(item.Category != null ? item.Category.Name : "Без категория")
                             </span>
                         </td>
-                        <td>⏱️ @item.PrepTimeMinutes мин</td>
+                        <td>@item.PrepTimeMinutes мин</td>
                         <td>@item.Ingredients</td>
 
-                        <!-- НОВА КЛЕТКА ЗА АВТОР И ДАТА -->
                         <td>
-                            <small class="text-muted d-block">👤 @item.CreatedBy</small>
-                            <small class="text-muted">📅 @item.CreatedOn.ToString("dd.MM.yyyy HH:mm")</small>
+                            <small class="text-muted d-block">@item.CreatedBy</small>
+                            <small class="text-muted">@item.CreatedOn.ToString("dd.MM.yyyy HH:mm")</small>
                         </td>
 
                         @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
                             <td class="text-center">
-                                <!-- БУТОН ЗА ЛЮБИМИ (⭐) -->
+                                <!-- БУТОН ЗА ЛЮБИМИ (Видим за всички логнати потребители) -->
                                 <form asp-controller="Favorites" asp-action="Toggle" method="post" class="d-inline">
                                     <input type="hidden" name="recipeId" value="@item.Id" />
-                                    <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Добави / Премахни от любими">
-                                        ⭐
-                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Добави / Премахни от любими"></button>
                                 </form>
 
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning me-1">Редактирай</a>
-
-                                @if (User.IsInRole("Admin") || User.Identity.Name == "admin")
+                                @* РЕДАКЦИЯ И ИЗТРИВАНЕ: Само за автора или за Admin *@
+                                @if (item.CreatedBy == User.Identity.Name || User.IsInRole("Admin") || User.Identity.Name == "admin")
                                 {
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning me-1">Редактирай</a>
                                     <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Изтрий</a>
                                 }
                             </td>

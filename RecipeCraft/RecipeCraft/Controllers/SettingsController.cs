@@ -18,11 +18,14 @@ namespace RecipeCraft.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Update(AppSettingsModel model)
         {
-            // 1. Валидация през Singleton мениджъра
+            // 1. Валидация на новите настройки през Singleton мениджъра
             var validationResults = AppSettingsManager.Instance.Validate(model);
-            foreach (var result in validationResults)
+            foreach (var error in validationResults)
             {
-                ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Невалидни данни");
+                foreach (var memberName in error.MemberNames)
+                {
+                    ModelState.AddModelError(memberName, error.ErrorMessage ?? "Невалидни данни.");
+                }
             }
 
             if (!ModelState.IsValid)
@@ -30,11 +33,11 @@ namespace RecipeCraft.Controllers
                 return View("Index", model);
             }
 
-            // 2. Запазване в Singleton инстанцията и във файла appsettings_custom.json
+            // 2. Запазване на настройките във файла през Singleton мениджъра
             AppSettingsManager.Instance.Save(model);
 
-            ViewBag.SuccessMessage = "Настройките бяха запазени успешно!";
-            return View("Index", model);
+            // 3. Пренасочване към Index изгледа с рецептите
+            return RedirectToAction("Index", "Recipes");
         }
     }
 }

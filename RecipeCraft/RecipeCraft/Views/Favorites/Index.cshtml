@@ -5,7 +5,7 @@
 }
 
 <div class="container mt-4">
-    <h2 class="mb-4">⭐ Моите Любими Рецепти</h2>
+    <h2 class="mb-4">Моите Любими Рецепти</h2>
 
     @if (!Model.Any())
     {
@@ -32,7 +32,7 @@
                             <form asp-controller="Favorites" asp-action="Toggle" method="post">
                                 <input type="hidden" name="recipeId" value="@fav.RecipeId" />
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    ❌ Премахни от любими
+                                    Премахни от любими
                                 </button>
                             </form>
                         </div>

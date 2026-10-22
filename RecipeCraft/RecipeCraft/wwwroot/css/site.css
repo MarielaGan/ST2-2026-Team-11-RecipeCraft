@@ -29,3 +29,129 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+:root {
+    --brand-yellow: #F4C430;
+    --brand-cream: #FDFBF7;
+    --brand-dark-brown: #2C1D11;
+    --brand-coffee: #6F4E37;
+    --brand-navbar-bg: #1E1B18;
+}
+
+/* Фон на цялото приложение */
+body {
+    background-color: var(--brand-cream);
+    color: var(--brand-dark-brown);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Навигационна лента (Navbar) */
+.navbar-custom {
+    background-color: var( --brand-dark-brown) !important;
+    border-bottom: 2px solid var(--brand-yellow) !important;
+}
+
+    .navbar-custom .nav-link {
+        color: var(--brand-yellow) !important;
+    }
+
+        .navbar-custom .nav-link:hover,
+        .navbar-custom .nav-link.active {
+            color: var(--brand-cream) !important;
+        }
+
+/* Персонализирани бутони */
+.btn-brand-primary {
+    background-color: var(--brand-yellow);
+    color: var(--brand-dark-brown);
+    font-weight: bold;
+    border: none;
+}
+
+    .btn-brand-primary:hover {
+        background-color: #e0b028;
+        color: var(--brand-dark-brown);
+    }
+
+.btn-brand-secondary {
+    background-color: var(--brand-coffee);
+    color: #ffffff;
+    border: none;
+}
+
+    .btn-brand-secondary:hover {
+        background-color: #583e2b;
+        color: #ffffff;
+    }
+
+/* Карти за рецепти и Gemini AI панел */
+.card-custom {
+    background-color: #ffffff;
+    border: 1px solid rgba(111, 78, 55, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.card-ai-header {
+    background-color: var(--brand-yellow);
+    color: var(--brand-dark-brown);
+}
+.btn-brand-login {
+    background-color: var(--brand-yellow); /* Топло жълто */
+    color: var(--brand-dark-brown) !important; /* Тъмно кафяв текст за максимален контраст */
+    border: 1px solid var(--brand-yellow);
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+    .btn-brand-login:hover {
+        background-color: #e0b028; /* Малко по-тъмно жълто при посочване */
+        color: #000000 !important;
+        transform: translateY(-1px);
+    }
+
+/* Hero баннер на началната страница */
+.hero-banner {
+    background: linear-gradient(135deg, var(--brand-dark-brown) 0%, #1a100a 100%);
+    border: 2px solid var(--brand-yellow);
+}
+
+/* Жълт акцент за заглавието */
+.text-brand-yellow {
+    color: var(--brand-yellow) !important;
+}
+
+/* Крем цвят за подзаглавието */
+.text-brand-cream {
+    color: var(--brand-cream) !important;
+}
+
+/* Голям главен бутон */
+.btn-brand-hero {
+    background-color: var(--brand-yellow);
+    color: var(--brand-dark-brown) !important;
+    border: 2px solid var(--brand-yellow);
+    border-radius: 12px;
+    transition: all 0.25s ease-in-out;
+}
+
+    .btn-brand-hero:hover {
+        background-color: #e0b028;
+        color: #000000 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(244, 196, 48, 0.25) !important;
+    }
+/* Бутон за hero секция без фон на блока */
+.btn-brand-clean-hero {
+    background-color: var(--brand-dark-brown);
+    color: var(--brand-yellow) !important;
+    border: 2px solid var(--brand-dark-brown);
+    border-radius: 10px;
+    transition: all 0.2s ease-in-out;
+}
+
+    .btn-brand-clean-hero:hover {
+        background-color: var(--brand-coffee);
+        border-color: var(--brand-coffee);
+        color: #ffffff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(44, 29, 17, 0.15) !important;
+    }

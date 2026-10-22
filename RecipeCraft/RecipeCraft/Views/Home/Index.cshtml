@@ -2,13 +2,28 @@
     ViewData["Title"] = "Добре дошли в RecipeCraft";
 }
 
-<div class="container py-5">
-    <!-- HERO SECTION -->
-    <div class="p-5 mb-5 mb-4 bg-dark text-white rounded-3 shadow text-center">
-        <h1 class="display-4 fw-bold">🍳 Добре дошли в RecipeCraft!</h1>
-        <p class="fs-4">Открийте страхотни рецепти или споделете вашите кулинарни шедьоври.</p>
-        <a asp-controller="Recipes" asp-action="Index" class="btn btn-outline-light btn-lg px-4 mt-2">
-            📖 Разгледай всички рецепти без регистрация
+<div class="container my-5 py-4 text-center">
+    <!-- Икона и заглавие -->
+    <div class="mb-3">
+        <span class="fs-1"></span>
+    </div>
+    
+    <h1 class="display-3 fw-bold mb-3" style="color: var(--brand-dark-brown);">
+        Добре дошли в <span style="color: #c9930a;">RecipeCraft</span>!
+    </h1>
+    
+    <!-- Подзаглавие -->
+    <p class="lead fs-3 mb-4 mx-auto" style="color: var(--brand-coffee); max-width: 650px;">
+        Открийте страхотни рецепти или споделете вашите кулинарни шедьоври.
+    </p>
+
+    <!-- Основен апетитен бутон -->
+    <div class="d-flex justify-content-center gap-3 mb-4">
+        <a asp-controller="Recipes" asp-action="Index" class="btn btn-brand-clean-hero px-4 py-3 fs-5 fw-bold shadow-sm">
+            Разгледай всички рецепти
         </a>
     </div>
+
+    <!-- Декоративна топла линия под блока -->
+    <div class="mx-auto" style="width: 120px; height: 3px; background-color: var(--brand-yellow); border-radius: 2px;"></div>
 </div>

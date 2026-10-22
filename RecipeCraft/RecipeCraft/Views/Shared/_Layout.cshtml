@@ -11,45 +11,59 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-dark bg-dark mb-3">
+        <nav class="navbar navbar-expand-sm navbar-dark navbar-custom shadow-sm mb-4">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">🍳 RecipeCraft</a>
+                <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                    <!-- Изображението на логото -->
+                    <img src="~/images/recipecraft-logo.png"
+                         alt="RecipeCraft Logo"
+                         class="d-inline-block align-top me-2"
+                         style="height: 60px; width: auto;" /> <!-- Настрой височината според нуждите си -->
+                </a>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Recipes" asp-action="Index">📖 Всички Рецепти</a>
+                        <li class="nav-item me-3">
+                            <a class="nav-link text-white" asp-controller="Home" asp-action="Index">
+                                Начало
+                            </a>
+                        </li>
+                        <li class="nav-item me-3">
+                            <a class="nav-link text-white" asp-controller="Recipes" asp-action="Index">Всички pецепти</a>
                         </li>
 
-                        @* ЛИНК КЪМ ЛЮБИМИ РЕЦЕПТИ (САМО ЗА ВЛЕЗЛИ ПОТРЕБИТЕЛИ) *@
+                        @* ЛИНКОВЕ САМО ЗА ВЛЕЗЛИ ПОТРЕБИТЕЛИ *@
                         @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
-                            <li class="nav-item">
-                                <a class="nav-link text-warning" asp-controller="Favorites" asp-action="Index">⭐ Любими</a>
+                            <li class="nav-item me-3">
+                                <a class="nav-link text-info" asp-controller="Recipes" asp-action="MyRecipes">Моите рецепти</a>
+                            </li>
+                            <li class="nav-item me-3">
+                                <a class="nav-link text-warning" asp-controller="Favorites" asp-action="Index">Любими</a>
                             </li>
                         }
 
-                        @* ЛИНК КЪМ КАТЕГОРИИ И ПОТРЕБИТЕЛИ (САМО ЗА АДМИН) *@
+                        @* ЛИНКОВЕ САМО ЗА АДМИН *@
                         @if (User.IsInRole("Admin") || User.Identity?.Name == "admin")
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Category" asp-action="Index">📂 Категории</a>
+                            <li class="nav-item me-3">
+                                <a class="nav-link" asp-controller="Category" asp-action="Index">Категории</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-info" asp-controller="Users" asp-action="Index">👥 Управление на Потребители</a>
+                            <li class="nav-item me-3">
+                                <a class="nav-link text-info" asp-controller="Users" asp-action="Index">Управление на Потребители</a>
                             </li>
                         }
                     </ul>
-                    <ul class="navbar-nav">
+                    <ul class="navbar-nav ms-auto align-items-center">
                         @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
-                            <li class="nav-item d-flex align-items-center me-2">
-                                <a asp-controller="Users" asp-action="Profile" class="nav-link text-light p-0 me-2" title="Преглед на профила">
-                                    👤 Моят профил (<strong>@User.Identity.Name</strong>)
+                           <li class="nav-item me-3">
+                                <a class="nav-link fw-bold" asp-controller="Users" asp-action="Profile" title="Моят профил">
+                                    @User.Identity.Name
                                 </a>
                             </li>
-                            <li class="nav-item d-flex align-items-center">
-                                <form asp-controller="Users" asp-action="Logout" method="post" class="m-0 p-0">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <li class="nav-item">
+                                <form class="form-inline" asp-controller="Users" asp-action="Logout" method="post">
+                                    <button type="submit" class="btn btn-outline-light btn-sm px-3">
                                         Изход
                                     </button>
                                 </form>
@@ -58,7 +72,8 @@
                         else
                         {
                             <li class="nav-item">
-                                <a asp-controller="Users" asp-action="Login" class="btn btn-outline-light ms-auto">
+                                <!-- КУТИЯ С ЯСЕН ТЪМЕН ТЕКСТ ВЪРХУ ЖЪЛТ ФОН -->
+                                <a class="btn btn-brand-login px-3 py-1 shadow-sm" asp-controller="Users" asp-action="Login">
                                     Вход / Регистрация
                                 </a>
                             </li>
