@@ -1,12 +1,8 @@
 ﻿using RecipeCraft.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RecipeCraft.Services
 {
-    public sealed record SqlSelectCommand(
-        string Sql,
-        IReadOnlyDictionary<string, object> Parameters,
-        string ReadableSql);
+    public sealed record SqlSelectCommand(string Sql, IReadOnlyDictionary<string, object> Parameters, string ReadableSql);
 
     public static class JsonQuerySqlTranslator
     {
@@ -31,10 +27,7 @@ namespace RecipeCraft.Services
                 ["начин на приготвяне"] = "r.Instructions",
                 ["preptimeminutes"] = "r.PrepTimeMinutes",
                 ["време"] = "r.PrepTimeMinutes",
-                ["време за приготвяне"] = "r.PrepTimeMinutes",
-                ["createdby"] = "r.CreatedBy",
-                ["автор"] = "r.CreatedBy",
-                ["createdon"] = "r.CreatedOn"
+                ["време за приготвяне"] = "r.PrepTimeMinutes"
             };
 
         public static SqlSelectCommand Translate(JSONQuery query)
@@ -57,17 +50,35 @@ namespace RecipeCraft.Services
                 string rawValue = cond.Value.Trim();
                 string op = (cond.Operator ?? "contains").Trim().ToLowerInvariant();
 
-                if (column == "r.PrepTimeMinutes" && int.TryParse(rawValue, out int numericVal))
+                if (column == "c.Name")
                 {
-                    
+                    string paramNameDesc = $"$p{paramIndex++}";
+
+                    if (op is "notcontains" or "notlike")
+                    {
+                        whereParts.Add($"(c.Name IS NULL OR (LOWER(c.Name) NOT LIKE LOWER({paramName}) AND LOWER(r.Ingredients) NOT LIKE LOWER({paramNameDesc})))");
+                        readableWhereParts.Add($"(c.Name IS NULL OR (LOWER(c.Name) NOT LIKE LOWER('%{EscapeSqlLiteral(rawValue)}%') AND LOWER(r.Ingredients) NOT LIKE LOWER('%{EscapeSqlLiteral(rawValue)}%')))");
+                    }
+                    else
+                    {
+                        whereParts.Add($"(LOWER(c.Name) LIKE LOWER({paramName}) OR LOWER(r.Ingredients) LIKE LOWER({paramNameDesc}))");
+                        readableWhereParts.Add($"(LOWER(c.Name) LIKE LOWER('%{EscapeSqlLiteral(rawValue)}%') OR LOWER(r.Ingredients) LIKE LOWER('%{EscapeSqlLiteral(rawValue)}%'))");
+                    }
+
+                    parameters[paramName] = $"%{rawValue}%";
+                    parameters[paramNameDesc] = $"%{rawValue}%";
+                }
+                else if (column == "r.PrepTimeMinutes" && int.TryParse(rawValue, out int numericVal))
+                {
+
                     string sqlOp = op switch
                     {
                         "equals" or "eq" or "=" or "contains" => "=",
                         "notequals" or "neq" or "!=" or "<>" => "<>",
-                        "gt" or ">" => ">",
-                        "lt" or "<" => "<",
-                        "gte" or ">=" => ">=",
-                        "lte" or "<=" => "<=",
+                        "gt" or "greaterthan" or ">" => ">",
+                        "lt" or "lessthan" or "<" => "<",
+                        "gte" or "greaterthanorequal" or ">=" => ">=",
+                        "lte" or "lessthanorequal" or "<=" => "<=",
                         _ => throw new ArgumentException($"Неподдържан оператор'{cond.Operator}' за числовата колона PrepTimeMinutes.")
                     };
 
@@ -79,17 +90,28 @@ namespace RecipeCraft.Services
                 {
                     string paramNameTitle = $"$p{paramIndex++}";
 
-                    whereParts.Add($"(LOWER({column}) LIKE LOWER({paramName}) OR LOWER(r.Title) LIKE LOWER({paramNameTitle}))");
-                    readableWhereParts.Add($"(LOWER({column}) LIKE LOWER('%{rawValue}%') OR LOWER(r.Title) LIKE LOWER('%{rawValue}%'))");
+                    if (op is "notcontains" or "notlike")
+                    {
+                        // Отрицание: ИЗПОЛЗВА СЕ AND, ЗА ДА ГО НЯМА НИТО В ПРОДУКТИТЕ, НИТО В ЗАГЛАВИЕТО
+                        whereParts.Add($"(r.Ingredients IS NULL OR (LOWER({column}) NOT LIKE LOWER({paramName}) AND LOWER(r.Title) NOT LIKE LOWER({paramNameTitle})))");
+                        readableWhereParts.Add($"(r.Ingredients IS NULL OR (LOWER({column}) NOT LIKE LOWER('%{EscapeSqlLiteral(rawValue)}%') AND LOWER(r.Title) NOT LIKE LOWER('%{EscapeSqlLiteral(rawValue)}%')))");
+                    }
+                    else
+                    {
+                        // Позитивно търсене: Използва се OR
+                        whereParts.Add($"(LOWER({column}) LIKE LOWER({paramName}) OR LOWER(r.Title) LIKE LOWER({paramNameTitle}))");
+                        readableWhereParts.Add($"(LOWER({column}) LIKE LOWER('%{EscapeSqlLiteral(rawValue)}%') OR LOWER(r.Title) LIKE LOWER('%{EscapeSqlLiteral(rawValue)}%')))");
+                    }
 
                     parameters[paramName] = $"%{rawValue}%";
                     parameters[paramNameTitle] = $"%{rawValue}%";
                 }
                 else
                 {
-                    whereParts.Add($"LOWER({column}) LIKE LOWER({paramName})");
-                    readableWhereParts.Add($"LOWER({column}) LIKE LOWER('%{rawValue}%')");
-                    parameters[paramName] = $"%{rawValue}%";
+                    var (clause, readableClause, paramValue) = BuildTextCondition(column, op, rawValue, paramName);
+                    whereParts.Add(clause);
+                    readableWhereParts.Add(readableClause);
+                    parameters[paramName] = paramValue;
                 }
             }
 
@@ -98,7 +120,7 @@ namespace RecipeCraft.Services
             string readableWhereSql = readableWhereParts.Count > 0 ? " WHERE " + string.Join($" {logicalOp} ", readableWhereParts) : "";
 
             string orderByCol = AllowedColumns.TryGetValue(query.OrderBy ?? "", out var col) ? col : "r.Title";
-            string sortDir = string.Equals(query.SortDirection, "DESC", StringComparison.OrdinalIgnoreCase) ? "DESC" : "ASC";
+            var sortDir = NormalizeSortDirection(query.SortDirection);
             string orderSql = $" ORDER BY {orderByCol} {sortDir}";
 
             return new SqlSelectCommand(
@@ -106,6 +128,47 @@ namespace RecipeCraft.Services
                 Parameters: parameters,
                 ReadableSql: BaseSelect + readableWhereSql + orderSql
             );
+        }
+        private static (string Clause, string ReadableClause, string ParamValue) BuildTextCondition(
+        string column,
+        string op,
+        string rawValue,
+        string paramName)
+        {
+            return op switch
+            {
+                "contains" or "like" => (
+                    $"LOWER({column}) LIKE LOWER({paramName})",
+                    $"LOWER({column}) LIKE LOWER('{EscapeSqlLiteral($"%{rawValue}%")}')",
+                    $"%{rawValue}%"),
+
+                "notcontains" or "notlike" => (
+                $"({column} IS NULL OR LOWER({column}) NOT LIKE LOWER({paramName}))",
+                $"({column} IS NULL OR LOWER({column}) NOT LIKE LOWER('{EscapeSqlLiteral($"%{rawValue}%")}'))",
+                $"%{rawValue}%"),
+
+                "equals" or "eq" or "=" => (
+                    $"LOWER({column}) = LOWER({paramName})",
+                    $"LOWER({column}) = LOWER('{EscapeSqlLiteral(rawValue)}')",
+                    rawValue),
+
+                "startswith" => (
+                    $"LOWER({column}) LIKE LOWER({paramName})",
+                    $"LOWER({column}) LIKE LOWER('{EscapeSqlLiteral($"{rawValue}%")}')",
+                    $"{rawValue}%"),
+
+                "endswith" => (
+                    $"LOWER({column}) LIKE LOWER({paramName})",
+                    $"LOWER({column}) LIKE LOWER('{EscapeSqlLiteral($"%{rawValue}")}')",
+                    $"%{rawValue}"),
+
+                "notequals" or "neq" or "!=" or "<>" => (
+                    $"({column} IS NULL OR LOWER({column}) <> LOWER({paramName}))",
+                    $"({column} IS NULL OR LOWER({column}) <> LOWER('{EscapeSqlLiteral(rawValue)}'))",
+                rawValue),
+
+                _ => throw new ArgumentException($"Неподдържан оператор за текстово поле: '{op}'.")
+            };
         }
         private static string ResolveColumn(string field)
         {
@@ -133,5 +196,21 @@ namespace RecipeCraft.Services
                 _ => throw new ArgumentException($"Невалиден логически оператор: '{logicalOperator}'. Позволени са само AND и OR.")
             };
         }
+        private static string NormalizeSortDirection(string? sortDirection)
+        {
+            if (string.IsNullOrWhiteSpace(sortDirection))
+            {
+                return "ASC";
+            }
+
+            var normalized = sortDirection.Trim().ToUpperInvariant();
+            return normalized switch
+            {
+                "ASC" or "ASCENDING" => "ASC",
+                "DESC" or "DESCENDING" => "DESC",
+                _ => throw new ArgumentException($"Невалидна посока на сортиране: '{sortDirection}'. Позволени са само ASC и DESC.")
+            };
+        }
+        private static string EscapeSqlLiteral(string value) => value.Replace("'", "''");
     }
 }
