@@ -6,17 +6,14 @@ namespace RecipeCraft.Models
     {
         public int Id { get; set; }
 
-        // Идентификатор на потребителя (потребителското име или User ID)
+        // Поправка: използваме UserId (уникален идентификатор)
         [Required]
-        public string UserName { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
 
         // Външен ключ към Рецептата
         public int RecipeId { get; set; }
-
-        // Навигационно свойство към рецептата
         public Recipe? Recipe { get; set; }
 
-        // Дата на добавяне в любими
         public DateTime AddedOn { get; set; } = DateTime.Now;
     }
 }

@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
+using System.Security.Claims; // Нужен за ClaimTypes.NameIdentifier
 
 namespace RecipeCraft.Controllers
 {
-    [Authorize] // Само влезели потребители имат любими рецепти
+    [Authorize] // Само за влезели потребители
     public class FavoritesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -19,27 +20,33 @@ namespace RecipeCraft.Controllers
         // 1. Списък с всички любими рецепти на текущия потребител
         public async Task<IActionResult> Index()
         {
-            var userName = User.Identity?.Name;
+            // Вземаме уникалното UserId
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var favorites = await _context.FavoriteRecipes
                 .Include(f => f.Recipe)
                     .ThenInclude(r => r!.Category)
-                .Where(f => f.UserName == userName)
+                .Where(f => f.UserId == userId) // Филтриране по UserId
                 .ToListAsync();
 
             return View(favorites);
         }
 
-        // 2. Добавяне/Премахване от любими (Toggle)
+        // 2. Добавяне / Премахване от любими (Toggle)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int recipeId)
         {
-            var userName = User.Identity?.Name;
-            if (string.IsNullOrEmpty(userName)) return Unauthorized();
+            // Вземаме уникалното UserId
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
 
             var existingFavorite = await _context.FavoriteRecipes
-                .FirstOrDefaultAsync(f => f.RecipeId == recipeId && f.UserName == userName);
+                .FirstOrDefaultAsync(f => f.RecipeId == recipeId && f.UserId == userId);
 
             if (existingFavorite != null)
             {
@@ -48,11 +55,11 @@ namespace RecipeCraft.Controllers
             }
             else
             {
-                // Добавяме в любими
+                // Добавяме в любими с уникалното UserId
                 _context.FavoriteRecipes.Add(new FavoriteRecipe
                 {
                     RecipeId = recipeId,
-                    UserName = userName
+                    UserId = userId
                 });
             }
 
