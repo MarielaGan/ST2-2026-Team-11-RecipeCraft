@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
-using RecipeCraft.Models;
 using System.Security.Claims;
 
 namespace RecipeCraft.Controllers
@@ -10,11 +8,11 @@ namespace RecipeCraft.Controllers
     [Authorize]
     public class FavoritesController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDatabase _database;
 
-        public FavoritesController(ApplicationDbContext context)
+        public FavoritesController(IDatabase database)
         {
-            _context = context;
+            _database = database;
         }
 
         public async Task<IActionResult> Index()
@@ -25,13 +23,8 @@ namespace RecipeCraft.Controllers
                 return RedirectToAction("Login", "Users");
             }
 
-            var favorites = await _context.FavoriteRecipes
-                .Include(f => f.Recipe)
-                    .ThenInclude(r => r!.Category)
-                .Include(f => f.Recipe)
-                    .ThenInclude(r => r!.User)
-                .Where(f => f.UserId == userId.Value)
-                .ToListAsync();
+            // Използваме IDatabase вместо _context.FavoriteRecipes
+            var favorites = await _database.GetFavoritesByUserIdAsync(userId.Value);
 
             return View(favorites);
         }
@@ -46,24 +39,8 @@ namespace RecipeCraft.Controllers
                 return Unauthorized();
             }
 
-            var existingFavorite = await _context.FavoriteRecipes
-                .FirstOrDefaultAsync(f => f.RecipeId == recipeId && f.UserId == userId.Value);
-
-            if (existingFavorite != null)
-            {
-                _context.FavoriteRecipes.Remove(existingFavorite);
-            }
-            else
-            {
-                _context.FavoriteRecipes.Add(new FavoriteRecipe
-                {
-                    RecipeId = recipeId,
-                    UserId = userId.Value,
-                    AddedOn = DateTime.Now
-                });
-            }
-
-            await _context.SaveChangesAsync();
+            // Логиката за добавяне/премахване е изнесена изцяло в IDatabase
+            await _database.ToggleFavoriteAsync(recipeId, userId.Value);
 
             var returnUrl = Request.Headers["Referer"].ToString();
             return !string.IsNullOrEmpty(returnUrl) ? Redirect(returnUrl) : RedirectToAction("Index", "Recipes");
@@ -80,7 +57,8 @@ namespace RecipeCraft.Controllers
             var username = User.Identity?.Name;
             if (!string.IsNullOrEmpty(username))
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+                // Използваме IDatabase за намиране на потребителя
+                var user = await _database.GetUserByUsernameAsync(username);
                 return user?.Id;
             }
 

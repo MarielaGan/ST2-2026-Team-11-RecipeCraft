@@ -1,28 +1,24 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
 
 namespace RecipeCraft.Controllers
 {
-
-
-
     [Authorize(Roles = "Admin")]
     public class CategoryController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDatabase _database;
 
-        public CategoryController(ApplicationDbContext context)
+        public CategoryController(IDatabase database)
         {
-            _context = context;
+            _database = database;
         }
 
         // 1. Списък на всички категории (Index)
         public async Task<IActionResult> Index()
         {
-            var categories = await _context.Categories.ToListAsync();
+            var categories = await _database.GetAllCategoriesAsync();
             return View(categories);
         }
 
@@ -39,8 +35,7 @@ namespace RecipeCraft.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(category);
-                await _context.SaveChangesAsync();
+                await _database.AddCategoryAsync(category);
                 return RedirectToAction(nameof(Index));
             }
             return View(category);
@@ -51,7 +46,7 @@ namespace RecipeCraft.Controllers
         {
             if (id == null) return NotFound();
 
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _database.GetCategoryByIdAsync(id.Value);
             if (category == null) return NotFound();
 
             return View(category);
@@ -66,8 +61,7 @@ namespace RecipeCraft.Controllers
 
             if (ModelState.IsValid)
             {
-                _context.Update(category);
-                await _context.SaveChangesAsync();
+                await _database.UpdateCategoryAsync(category);
                 return RedirectToAction(nameof(Index));
             }
             return View(category);
@@ -78,16 +72,8 @@ namespace RecipeCraft.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var category = await _context.Categories.FindAsync(id);
-            if (category != null)
-            {
-                _context.Categories.Remove(category);
-                await _context.SaveChangesAsync();
-            }
+            await _database.DeleteCategoryAsync(id);
             return RedirectToAction(nameof(Index));
         }
     }
 }
-
-
-

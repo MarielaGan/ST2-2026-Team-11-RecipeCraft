@@ -11,11 +11,11 @@ namespace RecipeCraft.Controllers
 {
     public class UsersController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDatabase _database;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(IDatabase database)
         {
-            _context = context;
+            _database = database;
         }
 
         // ==========================================
@@ -26,37 +26,19 @@ namespace RecipeCraft.Controllers
             ViewData["CurrentFilter"] = searchString;
             ViewData["CurrentRole"] = roleFilter;
 
-            var users = _context.Users.AsQueryable();
-
-            if (!string.IsNullOrEmpty(searchString))
-            {
-                searchString = searchString.ToLower();
-                users = users.Where(u => u.Username.ToLower().Contains(searchString)
-                                      || u.FirstName.ToLower().Contains(searchString)
-                                      || u.LastName.ToLower().Contains(searchString)
-                                      || u.Email.ToLower().Contains(searchString));
-            }
-
-            if (!string.IsNullOrEmpty(roleFilter))
-            {
-                users = users.Where(u => u.Role == roleFilter);
-            }
-
-            return View(await users.ToListAsync());
+            var users = await _database.GetFilteredUsersAsync(searchString, roleFilter);
+            return View(users);
         }
 
         // ==========================================
         // 2. LOGIN (Вход в системата)
         // ==========================================
-
-        // GET: Users/Login
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
 
-        // POST: Users/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
@@ -66,7 +48,7 @@ namespace RecipeCraft.Controllers
                 return View(model);
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == model.Username);
+            var user = await _database.GetUserByUsernameAsync(model.Username);
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "Грешно потребителско име или парола.");
@@ -82,7 +64,6 @@ namespace RecipeCraft.Controllers
                 return View(model);
             }
 
-            // Създаваме identity claims за бисквитката
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -102,25 +83,22 @@ namespace RecipeCraft.Controllers
         // ==========================================
         // 3. REGISTER (Регистрация)
         // ==========================================
-
-        // GET: Users/Register
         [HttpGet]
         public IActionResult Register()
         {
             return View();
         }
 
-        // POST: Users/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == model.Username))
+            if (await _database.UserExistsByUsernameAsync(model.Username))
             {
                 ModelState.AddModelError("Username", "Потребителското име вече е заето.");
             }
 
-            if (await _context.Users.AnyAsync(u => u.Email == model.Email))
+            if (await _database.UserExistsByEmailAsync(model.Email))
             {
                 ModelState.AddModelError("Email", "Имейл адресът вече се използва.");
             }
@@ -139,10 +117,8 @@ namespace RecipeCraft.Controllers
                 var hasher = new PasswordHasher<User>();
                 user.PasswordHash = hasher.HashPassword(user, model.Password);
 
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
+                await _database.AddUserAsync(user);
 
-                // Автоматично влизане след успешна регистрация
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -176,8 +152,6 @@ namespace RecipeCraft.Controllers
         // ==========================================
         // 5. MY PROFILE (Управление на личен профил)
         // ==========================================
-
-        // GET: Users/Profile
         [HttpGet]
         public async Task<IActionResult> Profile()
         {
@@ -185,15 +159,13 @@ namespace RecipeCraft.Controllers
             if (userIdClaim == null) return RedirectToAction(nameof(Login));
 
             int userId = int.Parse(userIdClaim);
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _database.GetUserByIdAsync(userId);
 
             if (user == null) return NotFound();
 
-            // Заказваме на рамката да използва съществуващия Details.cshtml
             return View("Details", user);
         }
 
-        // GET: Users/EditProfile
         [HttpGet]
         public async Task<IActionResult> EditProfile()
         {
@@ -201,14 +173,13 @@ namespace RecipeCraft.Controllers
             if (userIdClaim == null) return RedirectToAction(nameof(Login));
 
             int userId = int.Parse(userIdClaim);
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _database.GetUserByIdAsync(userId);
 
             if (user == null) return NotFound();
 
             return View("Edit", user);
         }
 
-        // POST: Users/EditProfile
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditProfile(User updatedUser)
@@ -219,16 +190,15 @@ namespace RecipeCraft.Controllers
             int userId = int.Parse(userIdClaim);
             if (updatedUser.Id != userId) return Unauthorized();
 
-            var existingUser = await _context.Users.FindAsync(userId);
+            var existingUser = await _database.GetUserByIdAsync(userId);
             if (existingUser == null) return NotFound();
 
-            // Проверки за уникалност на потребителско име и имейл при промяна
-            if (await _context.Users.AnyAsync(u => u.Username == updatedUser.Username && u.Id != userId))
+            if (await _database.UserExistsByUsernameAsync(updatedUser.Username, userId))
             {
                 ModelState.AddModelError("Username", "Потребителското име вече е заето.");
             }
 
-            if (await _context.Users.AnyAsync(u => u.Email == updatedUser.Email && u.Id != userId))
+            if (await _database.UserExistsByEmailAsync(updatedUser.Email, userId))
             {
                 ModelState.AddModelError("Email", "Имейл адресът вече е регистриран.");
             }
@@ -240,10 +210,8 @@ namespace RecipeCraft.Controllers
                 existingUser.LastName = updatedUser.LastName;
                 existingUser.Email = updatedUser.Email;
 
-                _context.Update(existingUser);
-                await _context.SaveChangesAsync();
+                await _database.UpdateUserAsync(existingUser);
 
-                // Обновяваме името в сесията/бисквитката
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, existingUser.Id.ToString()),
@@ -261,7 +229,6 @@ namespace RecipeCraft.Controllers
             return View("Edit", updatedUser);
         }
 
-        // POST: Users/DeleteProfile
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteProfile()
@@ -270,12 +237,11 @@ namespace RecipeCraft.Controllers
             if (userIdClaim == null) return RedirectToAction(nameof(Login));
 
             int userId = int.Parse(userIdClaim);
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _database.GetUserByIdAsync(userId);
 
             if (user != null)
             {
-                _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
+                await _database.DeleteUserAsync(userId);
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             }
 
@@ -288,7 +254,7 @@ namespace RecipeCraft.Controllers
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
-            var user = await _context.Users.FirstOrDefaultAsync(m => m.Id == id);
+            var user = await _database.GetUserByIdAsync(id.Value);
             if (user == null) return NotFound();
             return View(user);
         }
@@ -299,18 +265,17 @@ namespace RecipeCraft.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(User user)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == user.Username))
+            if (await _database.UserExistsByUsernameAsync(user.Username))
                 ModelState.AddModelError("Username", "Потребителското име вече е заето.");
 
-            if (await _context.Users.AnyAsync(u => u.Email == user.Email))
+            if (await _database.UserExistsByEmailAsync(user.Email))
                 ModelState.AddModelError("Email", "Имейл адресът вече е регистриран.");
 
             if (ModelState.IsValid)
             {
                 var hasher = new PasswordHasher<User>();
                 user.PasswordHash = hasher.HashPassword(user, user.PasswordHash);
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
+                await _database.AddUserAsync(user);
                 return RedirectToAction(nameof(Index));
             }
             return View(user);
@@ -319,7 +284,7 @@ namespace RecipeCraft.Controllers
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
-            var user = await _context.Users.FindAsync(id);
+            var user = await _database.GetUserByIdAsync(id.Value);
             if (user == null) return NotFound();
             return View(user);
         }
@@ -334,12 +299,11 @@ namespace RecipeCraft.Controllers
             {
                 try
                 {
-                    _context.Update(user);
-                    await _context.SaveChangesAsync();
+                    await _database.UpdateUserAsync(user);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!_context.Users.Any(e => e.Id == user.Id)) return NotFound();
+                    if (!await _database.UserExistsByIdAsync(user.Id)) return NotFound();
                     else throw;
                 }
                 return RedirectToAction(nameof(Index));
@@ -350,7 +314,7 @@ namespace RecipeCraft.Controllers
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
-            var user = await _context.Users.FirstOrDefaultAsync(m => m.Id == id);
+            var user = await _database.GetUserByIdAsync(id.Value);
             if (user == null) return NotFound();
             return View(user);
         }
@@ -359,12 +323,7 @@ namespace RecipeCraft.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user != null)
-            {
-                _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
-            }
+            await _database.DeleteUserAsync(id);
             return RedirectToAction(nameof(Index));
         }
     }
