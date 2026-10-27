@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
-using System.Security.Claims; // Нужен за ClaimTypes.NameIdentifier
+using System.Security.Claims;
 
 namespace RecipeCraft.Controllers
 {
-    [Authorize] // Само за влезели потребители
+    [Authorize]
     public class FavoritesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -17,57 +17,74 @@ namespace RecipeCraft.Controllers
             _context = context;
         }
 
-        // 1. Списък с всички любими рецепти на текущия потребител
         public async Task<IActionResult> Index()
         {
-            // Вземаме уникалното UserId
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Users");
+            }
 
             var favorites = await _context.FavoriteRecipes
                 .Include(f => f.Recipe)
                     .ThenInclude(r => r!.Category)
-                .Where(f => f.UserId == userId) // Филтриране по UserId
+                .Include(f => f.Recipe)
+                    .ThenInclude(r => r!.User)
+                .Where(f => f.UserId == userId.Value)
                 .ToListAsync();
 
             return View(favorites);
         }
 
-        // 2. Добавяне / Премахване от любими (Toggle)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int recipeId)
         {
-            // Вземаме уникалното UserId
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId))
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null)
             {
                 return Unauthorized();
             }
 
             var existingFavorite = await _context.FavoriteRecipes
-                .FirstOrDefaultAsync(f => f.RecipeId == recipeId && f.UserId == userId);
+                .FirstOrDefaultAsync(f => f.RecipeId == recipeId && f.UserId == userId.Value);
 
             if (existingFavorite != null)
             {
-                // Премахваме от любими, ако вече я има
                 _context.FavoriteRecipes.Remove(existingFavorite);
             }
             else
             {
-                // Добавяме в любими с уникалното UserId
                 _context.FavoriteRecipes.Add(new FavoriteRecipe
                 {
                     RecipeId = recipeId,
-                    UserId = userId
+                    UserId = userId.Value,
+                    AddedOn = DateTime.Now
                 });
             }
 
             await _context.SaveChangesAsync();
 
-            // Връщаме потребителя към страницата, от която е извикал действието
             var returnUrl = Request.Headers["Referer"].ToString();
             return !string.IsNullOrEmpty(returnUrl) ? Redirect(returnUrl) : RedirectToAction("Index", "Recipes");
+        }
+
+        private async Task<int?> GetCurrentUserIdAsync()
+        {
+            var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(claimValue, out int userId))
+            {
+                return userId;
+            }
+
+            var username = User.Identity?.Name;
+            if (!string.IsNullOrEmpty(username))
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+                return user?.Id;
+            }
+
+            return null;
         }
     }
 }

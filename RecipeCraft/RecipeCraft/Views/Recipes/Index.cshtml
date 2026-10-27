@@ -8,7 +8,7 @@
 <div class="container mt-4">
     <h2 class="mb-4">Списък с рецепти</h2>
 
-    <!-- 1. ТЪРСЕНЕ НА ЕСТЕСТВЕН ЕЗИК С GEMINI AI (ПОКАЗВА СЕ САМО АКО Е АКТИВИРАНО) -->
+    <!-- 1. ТЪРСЕНЕ НА ЕСТЕСТВЕН ЕЗИК С GEMINI AI -->
     @if (AppSettingsManager.Instance.Settings.EnableAiAssistant)
     {
         <div class="card mb-4 border-warning shadow-sm">
@@ -69,7 +69,7 @@
         </div>
     </form>
 
-    <!-- 3. БУТОНИ: НОВА РЕЦЕПТА, ДОБАВИ КАТЕГОРИЯ (АДМИН) И НАСТРОЙКИ -->
+    <!-- 3. БУТОНИ: НОВА РЕЦЕПТА, ДОБАВИ КАТЕГОРИЯ И НАСТРОЙКИ -->
     <div class="d-flex gap-2 mb-3">
         @if (User.Identity != null && User.Identity.IsAuthenticated)
         {
@@ -83,7 +83,6 @@
             }
         }
 
-        <!-- БУТОН КЪМ SINGLETON НАСТРОЙКИТЕ -->
         <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary">
             Настройки
         </a>
@@ -130,7 +129,11 @@
                             }
                         </td>
 
-                        <td class="fw-bold">@item.Title</td>
+                        <td class="fw-bold">
+                            <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
+                                @item.Title
+                            </a>
+                        </td>
                         <td>
                             <span class="badge bg-info text-dark">
                                 @(item.Category != null ? item.Category.Name : "Без категория")
@@ -140,21 +143,19 @@
                         <td>@item.Ingredients</td>
 
                         <td>
-                            <small class="text-muted d-block">@item.CreatedBy</small>
+                            <small class="text-muted d-block">@(item.User?.Username ?? "Няма автор")</small>
                             <small class="text-muted">@item.CreatedOn.ToString("dd.MM.yyyy HH:mm")</small>
                         </td>
 
                         @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
                             <td class="text-center">
-                                <!-- БУТОН ЗА ЛЮБИМИ (Видим за всички логнати потребители) -->
+                                <!-- БУТОН ЗА ЛЮБИМИ -->
                                 <form asp-controller="Favorites" asp-action="Toggle" method="post" class="d-inline">
                                     <input type="hidden" name="recipeId" value="@item.Id" />
-                                    <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Добави / Премахни от любими"></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Добави / Премахни от любими">⭐</button>
                                 </form>
-
-                                @* РЕДАКЦИЯ И ИЗТРИВАНЕ: Само за автора или за Admin *@
-                                @if (item.CreatedBy == User.Identity.Name || User.IsInRole("Admin") || User.Identity.Name == "admin")
+                                @if ((item.User != null && item.User.Username == User.Identity.Name) || User.IsInRole("Admin") || User.Identity.Name == "admin")
                                 {
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning me-1">Редактирай</a>
                                     <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Изтрий</a>

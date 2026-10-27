@@ -15,9 +15,6 @@ namespace RecipeCraft.Controllers
         private readonly IGeminiQueryService _geminiService;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
-     
-
-        // Впръскване на DbContext и Gemini услугата чрез Dependency Injection
         public RecipesController(ApplicationDbContext context, IGeminiQueryService geminiService, IWebHostEnvironment webHostEnvironment)
         {
             _context = context;
@@ -31,45 +28,38 @@ namespace RecipeCraft.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index(string? searchString, string? category, string? aiQuery)
         {
-            // Зареждаме категориите за падащото меню
             ViewBag.Categories = await _context.Categories.ToListAsync();
 
-            // Запазваме текущите стойности във ViewData / ViewBag за View-то
             ViewData["CurrentFilter"] = searchString;
             ViewData["CurrentCategory"] = category;
             ViewBag.AiQuery = aiQuery;
 
-            // --- Търсене на естествен език чрез Gemini AI ---
             if (!string.IsNullOrWhiteSpace(aiQuery))
             {
                 string trimmedQuery = aiQuery.Trim();
 
-                // Подаваме CancellationToken.None, за да предпазим заявката от преждевременно прекъсване
                 var geminiResult = await _geminiService.GenerateJsonQueryAsync(trimmedQuery, CancellationToken.None);
 
                 if (!geminiResult.IsSuccess || geminiResult.Query is null)
                 {
                     ViewBag.Error = geminiResult.Error ?? "Възникна грешка при обработката на заявката от ИИ.";
-                    return View(await _context.Recipes.Include(r => r.Category).ToListAsync());
+                    return View(await _context.Recipes.Include(r => r.Category).Include(r => r.User).ToListAsync());
                 }
 
                 try
                 {
-                    // Превеждаме JSONQuery до параметризирана SQL команда
                     var sqlCommand = JsonQuerySqlTranslator.Translate(geminiResult.Query);
 
-                    // Преобразуваме параметрите в SqliteParameter за Entity Framework Core
                     var sqlParams = sqlCommand.Parameters
                         .Select(p => new Microsoft.Data.Sqlite.SqliteParameter(p.Key, p.Value))
                         .ToArray();
 
-                    // Изпълняваме параметризирания SQL през EF Core
                     var aiRecipes = await _context.Recipes
                         .FromSqlRaw(sqlCommand.Sql, sqlParams)
                         .Include(r => r.Category)
+                        .Include(r => r.User)
                         .ToListAsync();
 
-                    // Подаваме диагностичните данни към View-то
                     ViewBag.RawJson = geminiResult.RawJson;
                     ViewBag.GeneratedSql = sqlCommand.ReadableSql;
                     ViewBag.Explanation = geminiResult.Query.Explanation;
@@ -79,17 +69,19 @@ namespace RecipeCraft.Controllers
                 catch (ArgumentException ex)
                 {
                     ViewBag.Error = $"Грешка при превод на JSONQuery към SQL: {ex.Message}";
-                    return View(await _context.Recipes.Include(r => r.Category).ToListAsync());
+                    return View(await _context.Recipes.Include(r => r.Category).Include(r => r.User).ToListAsync());
                 }
                 catch (Exception ex)
                 {
                     ViewBag.Error = $"Възникна системна грешка: {ex.Message}";
-                    return View(await _context.Recipes.Include(r => r.Category).ToListAsync());
+                    return View(await _context.Recipes.Include(r => r.Category).Include(r => r.User).ToListAsync());
                 }
             }
 
-            // --- Стандартно филтриране (без ИИ) ---
-            var query = _context.Recipes.Include(r => r.Category).AsQueryable();
+            var query = _context.Recipes
+                .Include(r => r.Category)
+                .Include(r => r.User)
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchString))
             {
@@ -105,14 +97,29 @@ namespace RecipeCraft.Controllers
         }
 
         // ==========================================
-        // 2. INSERT (Добавяне на рецепта)
+        // 2. DETAILS (Детайли на рецепта)
         // ==========================================
-        // Изисква потребителят да е ВЛЯЗЪЛ в профила си
+        [AllowAnonymous]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var recipe = await _context.Recipes
+                .Include(r => r.Category)
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (recipe == null) return NotFound();
+
+            return View(recipe);
+        }
+
+        // ==========================================
+        // 3. INSERT (Добавяне на рецепта)
+        // ==========================================
         [Authorize]
         public async Task<IActionResult> Create()
         {
-
-            // Зареждаме категориите за падащото меню в Create View
             var categories = await _context.Categories.ToListAsync();
             ViewBag.CategoryId = new SelectList(categories, "Id", "Name");
 
@@ -124,15 +131,19 @@ namespace RecipeCraft.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Recipe recipe, IFormFile? imageFile)
         {
+            var currentUserId = await GetCurrentUserIdAsync();
+            if (currentUserId == null)
+            {
+                return RedirectToAction("Login", "Users");
+            }
 
-            recipe.CreatedBy = User.Identity?.Name ?? "Анонимен";
+            recipe.UserId = currentUserId.Value;
             recipe.CreatedOn = DateTime.Now;
 
+            ModelState.Remove(nameof(Recipe.User));
 
-            // Обработка на качената снимка
             if (imageFile != null && imageFile.Length > 0)
             {
-                // Генерираме уникално име за файла, за да няма препокриване
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
                 if (!Directory.Exists(uploadsFolder))
                 {
@@ -147,9 +158,9 @@ namespace RecipeCraft.Controllers
                     await imageFile.CopyToAsync(fileStream);
                 }
 
-                // Записваме относителния път за визуализация в HTML
                 recipe.ImageUrl = "/uploads/" + uniqueFileName;
             }
+
             if (ModelState.IsValid)
             {
                 _context.Recipes.Add(recipe);
@@ -157,7 +168,6 @@ namespace RecipeCraft.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // При грешка във формата презареждаме категориите
             var categories = await _context.Categories.ToListAsync();
             ViewBag.CategoryId = new SelectList(categories, "Id", "Name", recipe.CategoryId);
 
@@ -165,7 +175,7 @@ namespace RecipeCraft.Controllers
         }
 
         // ==========================================
-        // EDIT (Редакция на рецепта)
+        // 4. EDIT (Редакция на рецепта)
         // ==========================================
         [Authorize]
         public async Task<IActionResult> Edit(int? id)
@@ -175,13 +185,12 @@ namespace RecipeCraft.Controllers
             var recipe = await _context.Recipes.FindAsync(id);
             if (recipe == null) return NotFound();
 
-            // Проверка за собственост: Трябва да е авторът ИЛИ Admin
-            var currentUsername = User.Identity?.Name;
-            bool isAdmin = User.IsInRole("Admin") || currentUsername == "admin";
+            var currentUserId = await GetCurrentUserIdAsync();
+            bool isAdmin = User.IsInRole("Admin") || User.Identity?.Name == "admin";
 
-            if (recipe.CreatedBy != currentUsername && !isAdmin)
+            if (recipe.UserId != currentUserId && !isAdmin)
             {
-                return Forbid(); // Забранява достъпа, ако не е негова рецепта
+                return Forbid();
             }
 
             var categories = await _context.Categories.ToListAsync();
@@ -200,17 +209,18 @@ namespace RecipeCraft.Controllers
             var existingRecipe = await _context.Recipes.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
             if (existingRecipe == null) return NotFound();
 
-            // Защита при POST: Проверка дали потребителят не се опитва да редактира чужда рецепта през заявка
-            var currentUsername = User.Identity?.Name;
-            bool isAdmin = User.IsInRole("Admin") || currentUsername == "admin";
+            var currentUserId = await GetCurrentUserIdAsync();
+            bool isAdmin = User.IsInRole("Admin") || User.Identity?.Name == "admin";
 
-            if (existingRecipe.CreatedBy != currentUsername && !isAdmin)
+            if (existingRecipe.UserId != currentUserId && !isAdmin)
             {
                 return Forbid();
             }
 
-            recipe.CreatedBy = existingRecipe.CreatedBy;
+            recipe.UserId = existingRecipe.UserId;
             recipe.CreatedOn = existingRecipe.CreatedOn;
+
+            ModelState.Remove(nameof(Recipe.User));
 
             if (recipe.CategoryId == 0)
             {
@@ -259,7 +269,7 @@ namespace RecipeCraft.Controllers
         }
 
         // ==========================================
-        // DELETE (Изтриване на рецепта)
+        // 5. DELETE (Изтриване на рецепта)
         // ==========================================
         [Authorize]
         public async Task<IActionResult> Delete(int? id)
@@ -268,15 +278,15 @@ namespace RecipeCraft.Controllers
 
             var recipe = await _context.Recipes
                 .Include(r => r.Category)
+                .Include(r => r.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (recipe == null) return NotFound();
 
-            // Проверка за собственост
-            var currentUsername = User.Identity?.Name;
-            bool isAdmin = User.IsInRole("Admin") || currentUsername == "admin";
+            var currentUserId = await GetCurrentUserIdAsync();
+            bool isAdmin = User.IsInRole("Admin") || User.Identity?.Name == "admin";
 
-            if (recipe.CreatedBy != currentUsername && !isAdmin)
+            if (recipe.UserId != currentUserId && !isAdmin)
             {
                 return Forbid();
             }
@@ -292,10 +302,10 @@ namespace RecipeCraft.Controllers
             var recipe = await _context.Recipes.FindAsync(id);
             if (recipe != null)
             {
-                var currentUsername = User.Identity?.Name;
-                bool isAdmin = User.IsInRole("Admin") || currentUsername == "admin";
+                var currentUserId = await GetCurrentUserIdAsync();
+                bool isAdmin = User.IsInRole("Admin") || User.Identity?.Name == "admin";
 
-                if (recipe.CreatedBy != currentUsername && !isAdmin)
+                if (recipe.UserId != currentUserId && !isAdmin)
                 {
                     return Forbid();
                 }
@@ -306,28 +316,49 @@ namespace RecipeCraft.Controllers
 
             return RedirectToAction(nameof(MyRecipes));
         }
+
         // ==========================================
-        // MY RECIPES (Рецепти на текущо влезлия потребител)
+        // 6. MY RECIPES (Рецепти на текущия потребител)
         // ==========================================
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> MyRecipes()
         {
-            // Взимаме потребителското име на текущо логнатия потребител
-            var currentUsername = User.Identity?.Name;
-            if (string.IsNullOrEmpty(currentUsername))
+            var currentUserId = await GetCurrentUserIdAsync();
+            if (currentUserId == null)
             {
                 return RedirectToAction("Login", "Users");
             }
 
-            // Филтрираме рецептите по CreatedBy
             var myRecipes = await _context.Recipes
                 .Include(r => r.Category)
-                .Where(r => r.CreatedBy == currentUsername)
+                .Include(r => r.User)
+                .Where(r => r.UserId == currentUserId.Value)
                 .OrderByDescending(r => r.CreatedOn)
                 .ToListAsync();
 
             return View("Index", myRecipes);
+        }
+
+        // ==========================================
+        // Помощен метод за извличане на UserId
+        // ==========================================
+        private async Task<int?> GetCurrentUserIdAsync()
+        {
+            var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(claimValue, out int userId))
+            {
+                return userId;
+            }
+
+            var username = User.Identity?.Name;
+            if (!string.IsNullOrEmpty(username))
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+                return user?.Id;
+            }
+
+            return null;
         }
     }
 }

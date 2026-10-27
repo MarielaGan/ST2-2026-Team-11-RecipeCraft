@@ -15,7 +15,8 @@ namespace RecipeCraft.Models
        
         public int CategoryId { get; set; }
         public Category? Category { get; set; }
-        public string CreatedBy { get; set; } = string.Empty; // Потребителското име на автора
+        public int UserId { get; set; }
+        public User? User { get; set; }
         public DateTime CreatedOn { get; set; } = DateTime.Now; // Дата и час на създаване
         public string? ImageUrl { get; set; } // Път до записаната снимка
 

@@ -5,7 +5,7 @@
 
     <form asp-action="Edit" method="post" enctype="multipart/form-data" class="card card-body shadow-sm mt-3">
         <input type="hidden" asp-for="Id" />
-        <input type="hidden" asp-for="CreatedBy" />
+        <input type="hidden" asp-for="UserId" />
         <input type="hidden" asp-for="CreatedOn" />
         <input type="hidden" asp-for="ImageUrl" />
 
@@ -15,7 +15,6 @@
             <span asp-validation-for="Title" class="text-danger"></span>
         </div>
 
-        <!-- КОРИГИРАНО: Свързване с CategoryId и динамичните категории от базата -->
         <div class="mb-3">
             <label asp-for="CategoryId" class="form-label fw-bold">Категория</label>
             <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
@@ -30,7 +29,6 @@
             <span asp-validation-for="PrepTimeMinutes" class="text-danger"></span>
         </div>
 
-        <!-- Поле за качване / промяна на снимка -->
         <div class="mb-3">
             <label class="form-label fw-bold">Снимка на рецептата</label>
             @if (!string.IsNullOrEmpty(Model.ImageUrl))

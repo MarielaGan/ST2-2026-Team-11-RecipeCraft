@@ -6,9 +6,9 @@ namespace RecipeCraft.Models
     {
         public int Id { get; set; }
 
-        // Поправка: използваме UserId (уникален идентификатор)
         [Required]
-        public string UserId { get; set; } = string.Empty;
+        public int UserId { get; set; }
+        public User? User { get; set; }
 
         // Външен ключ към Рецептата
         public int RecipeId { get; set; }

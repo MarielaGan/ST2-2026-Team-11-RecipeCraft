@@ -7,7 +7,7 @@ namespace RecipeCraft.Services
     public static class JsonQuerySqlTranslator
     {
         private const string BaseSelect = @"
-            SELECT r.Id, r.Title, r.CategoryId, r.PrepTimeMinutes, r.Ingredients, r.Instructions, r.CreatedBy, r.CreatedOn, r.ImageUrl 
+            SELECT r.Id, r.Title, r.CategoryId, r.PrepTimeMinutes, r.Ingredients, r.Instructions, r.UserId, r.CreatedOn, r.ImageUrl 
             FROM Recipes AS r
             LEFT JOIN Categories AS c ON r.CategoryId = c.Id";
 
