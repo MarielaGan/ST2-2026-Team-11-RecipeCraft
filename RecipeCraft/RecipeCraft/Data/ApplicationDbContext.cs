@@ -9,9 +9,9 @@ namespace RecipeCraft.Data
             : base(options) { }
 
         public DbSet<Recipe> Recipes { get; set; }
-        public DbSet<User> Users { get; set; }
-       
+        public DbSet<User> Users { get; set; }       
         public DbSet<Category> Categories { get; set; }
         public DbSet<FavoriteRecipe> FavoriteRecipes { get; set; }
+        public DbSet<Comment> Comments { get; set; }
     }
 }

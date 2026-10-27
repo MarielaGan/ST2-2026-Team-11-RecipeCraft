@@ -64,4 +64,69 @@
             }
         </div>
     </div>
+
+    <!-- ========================================== -->
+    <!-- СЕКЦИЯ ЗА КОМЕНТАРИ                        -->
+    <!-- ========================================== -->
+    <div class="card recipe-card shadow-sm p-4 mb-5">
+        <h4 class="fw-bold section-title mb-4">Коментари (@(Model.Comments?.Count ?? 0))</h4>
+
+        <!-- ФОРМА ЗА ДОБАВЯНЕ: Само за влезели потребители -->
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <form asp-controller="Comments" asp-action="Create" method="post" class="mb-4">
+                <input type="hidden" name="recipeId" value="@Model.Id" />
+                <div class="mb-3">
+                    <textarea name="content" class="form-control" rows="3" placeholder="Оставете коментар за тази рецепта..." required style="background-color: #fff; border-color: rgba(44, 29, 17, 0.2);"></textarea>
+                </div>
+                <div class="text-end">
+                    <button type="submit" class="btn btn-brand-primary">Публикувай коментар</button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="alert alert-light border text-center mb-4" style="background-color: rgba(244, 196, 48, 0.1);">
+                Трябва да сте <a asp-controller="Users" asp-action="Login" class="fw-bold text-dark">влезли в профила си</a>, за да оставяте коментари.
+            </div>
+        }
+
+        <!-- СПИСЪК С КОМЕНТАРИ -->
+        @if (Model.Comments != null && Model.Comments.Any())
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var comment in Model.Comments.OrderByDescending(c => c.CreatedOn))
+                {
+                    <div class="p-3 rounded border bg-white shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold" style="color: var(--brand-dark-brown);">
+                                👤 @(comment.User?.Username ?? "Анонимен")
+                            </span>
+                            <small class="text-muted">@comment.CreatedOn.ToString("dd.MM.yyyy HH:mm")</small>
+                        </div>
+
+                        <p class="mb-2" style="white-space: pre-line; line-height: 1.5; color: var(--brand-dark-brown);">@comment.Content</p>
+
+                        @if (User.Identity != null && User.Identity.IsAuthenticated &&
+                             ((comment.User != null && comment.User.Username == User.Identity.Name) || User.IsInRole("Admin") || User.Identity.Name == "admin"))
+                        {
+                            <div class="text-end border-top pt-2 mt-2">
+                                <form asp-controller="Comments" asp-action="Delete" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@comment.Id" />
+                                    <input type="hidden" name="recipeId" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Сигурни ли сте, че искате да изтриете този коментар?');">
+                                        Изтрий
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted text-center my-3">Все още няма коментари. Бъдете първият, който ще остави мнение!</p>
+        }
+    </div>
 </div>

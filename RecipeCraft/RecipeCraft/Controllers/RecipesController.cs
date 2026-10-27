@@ -107,6 +107,8 @@ namespace RecipeCraft.Controllers
             var recipe = await _context.Recipes
                 .Include(r => r.Category)
                 .Include(r => r.User)
+                .Include(r => r.Comments)
+                    .ThenInclude(c => c.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (recipe == null) return NotFound();

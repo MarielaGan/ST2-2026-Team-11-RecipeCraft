@@ -43,5 +43,10 @@ namespace RecipeCraft.Data
         Task AddUserAsync(User user);
         Task UpdateUserAsync(User user);
         Task DeleteUserAsync(int id);
+
+        // --- КОМЕНТАРИ ---
+        Task<IEnumerable<Comment>> GetCommentsByRecipeIdAsync(int recipeId);
+        Task AddCommentAsync(Comment comment);
+        Task DeleteCommentAsync(int commentId, int userId, bool isAdmin);
     }
 }

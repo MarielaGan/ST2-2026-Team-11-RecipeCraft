@@ -32,5 +32,6 @@ namespace RecipeCraft.Models
         [Required(ErrorMessage = "Инструкциите са задължителни")]
         [Display(Name = "Начин на приготвяне")]
         public string Instructions { get; set; } = string.Empty;
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     }
 }

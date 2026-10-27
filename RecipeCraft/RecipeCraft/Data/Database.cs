@@ -263,5 +263,30 @@ namespace RecipeCraft.Data
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task AddCommentAsync(Comment comment)
+        {
+            await _context.Comments.AddAsync(comment);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<Comment>> GetCommentsByRecipeIdAsync(int recipeId)
+        {
+            return await _context.Comments
+                .Include(c => c.User)
+                .Where(c => c.RecipeId == recipeId)
+                .OrderByDescending(c => c.CreatedOn)
+                .ToListAsync();
+        }
+
+        public async Task DeleteCommentAsync(int commentId, int userId, bool isAdmin)
+        {
+            var comment = await _context.Comments.FindAsync(commentId);
+            if (comment != null && (comment.UserId == userId || isAdmin))
+            {
+                _context.Comments.Remove(comment);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

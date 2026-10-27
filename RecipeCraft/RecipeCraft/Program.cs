@@ -15,6 +15,9 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source=recipecraft.db"));
 
+// repository pattern
+builder.Services.AddScoped<IDatabase, Database>();
+
 // 2. Регистрация на Singleton за AppSettings
 builder.Services.AddSingleton(AppSettingsManager.Instance);
 
