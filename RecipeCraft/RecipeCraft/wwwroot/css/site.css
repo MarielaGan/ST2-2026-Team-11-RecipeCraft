@@ -1,34 +1,6 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
-body {
-  margin-bottom: 60px;
-}
-
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
-}
+/* ==========================================
+   1. ГЛОБАЛНИ СТИЛОВЕ И CSS ПРОМЕНЛИВИ
+   ========================================== */
 :root {
     --brand-yellow: #F4C430;
     --brand-cream: #FDFBF7;
@@ -37,16 +9,51 @@ body {
     --brand-navbar-bg: #1E1B18;
 }
 
-/* Фон на цялото приложение */
+html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
 body {
+    margin-bottom: 60px;
     background-color: var(--brand-cream);
     color: var(--brand-dark-brown);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Навигационна лента (Navbar) */
+/* Достъпност и фокусиране */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+/* Form floating поддръжка */
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+/* ==========================================
+   2. НАВИГАЦИОННА ЛЕНТА (NAVBAR)
+   ========================================== */
 .navbar-custom {
-    background-color: var( --brand-dark-brown) !important;
+    background-color: var(--brand-dark-brown) !important;
     border-bottom: 2px solid var(--brand-yellow) !important;
 }
 
@@ -59,7 +66,9 @@ body {
             color: var(--brand-cream) !important;
         }
 
-/* Персонализирани бутони */
+/* ==========================================
+   3. БУТОНИ И АКЦЕНТИ
+   ========================================== */
 .btn-brand-primary {
     background-color: var(--brand-yellow);
     color: var(--brand-dark-brown);
@@ -83,7 +92,34 @@ body {
         color: #ffffff;
     }
 
-/* Карти за рецепти и Gemini AI панел */
+.btn-brand-login {
+    background-color: var(--brand-yellow);
+    color: var(--brand-dark-brown) !important;
+    border: 1px solid var(--brand-yellow);
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+    .btn-brand-login:hover {
+        background-color: #e0b028;
+        color: #000000 !important;
+        transform: translateY(-1px);
+    }
+
+.btn-brand-outline {
+    border-color: var(--brand-coffee);
+    color: var(--brand-coffee);
+    background-color: transparent;
+}
+
+    .btn-brand-outline:hover {
+        background-color: var(--brand-coffee);
+        color: #ffffff;
+    }
+
+/* ==========================================
+   4. КАРТИ И HERO СЕКЦИЯ
+   ========================================== */
 .card-custom {
     background-color: #ffffff;
     border: 1px solid rgba(111, 78, 55, 0.15);
@@ -95,36 +131,20 @@ body {
     background-color: var(--brand-yellow);
     color: var(--brand-dark-brown);
 }
-.btn-brand-login {
-    background-color: var(--brand-yellow); /* Топло жълто */
-    color: var(--brand-dark-brown) !important; /* Тъмно кафяв текст за максимален контраст */
-    border: 1px solid var(--brand-yellow);
-    border-radius: 6px;
-    transition: all 0.2s ease-in-out;
-}
-    .btn-brand-login:hover {
-        background-color: #e0b028; /* Малко по-тъмно жълто при посочване */
-        color: #000000 !important;
-        transform: translateY(-1px);
-    }
 
-/* Hero баннер на началната страница */
 .hero-banner {
     background: linear-gradient(135deg, var(--brand-dark-brown) 0%, #1a100a 100%);
     border: 2px solid var(--brand-yellow);
 }
 
-/* Жълт акцент за заглавието */
 .text-brand-yellow {
     color: var(--brand-yellow) !important;
 }
 
-/* Крем цвят за подзаглавието */
 .text-brand-cream {
     color: var(--brand-cream) !important;
 }
 
-/* Голям главен бутон */
 .btn-brand-hero {
     background-color: var(--brand-yellow);
     color: var(--brand-dark-brown) !important;
@@ -139,7 +159,7 @@ body {
         transform: translateY(-2px);
         box-shadow: 0 8px 16px rgba(244, 196, 48, 0.25) !important;
     }
-/* Бутон за hero секция без фон на блока */
+
 .btn-brand-clean-hero {
     background-color: var(--brand-dark-brown);
     color: var(--brand-yellow) !important;
@@ -155,3 +175,54 @@ body {
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(44, 29, 17, 0.15) !important;
     }
+
+/* ==========================================
+   5. ЕКРАН ДЕТАЙЛИ НА РЕЦЕПТА (DETAILS VIEW)
+   ========================================== */
+.recipe-container {
+    max-width: 1100px;
+}
+
+.recipe-card {
+    background-color: var(--brand-cream);
+    border: 1px solid rgba(44, 29, 17, 0.1);
+    color: var(--brand-dark-brown);
+}
+
+.recipe-img-container {
+    background-color: rgba(44, 29, 17, 0.05); /* Леко загатнат фонов цвят за празното пространство */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-height: 450px; /* Ограничение за максимална височина */
+    overflow: hidden;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: 2px solid var(--brand-yellow);
+}
+
+.recipe-img {
+    max-width: 100%;
+    max-height: 450px;
+    width: auto;
+    height: auto;
+    object-fit: contain; /* Запазва цялата снимка видима, без да я отрязва */
+}
+.badge-category {
+    background-color: var(--brand-yellow);
+    color: var(--brand-dark-brown);
+    font-weight: 600;
+}
+
+.badge-time {
+    background-color: var(--brand-coffee);
+    color: #ffffff;
+}
+
+.section-title {
+    color: var(--brand-coffee);
+    border-bottom: 2px solid var(--brand-yellow);
+    padding-bottom: 5px;
+}
+

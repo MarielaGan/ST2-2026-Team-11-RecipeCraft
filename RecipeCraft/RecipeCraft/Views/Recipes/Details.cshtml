@@ -1,5 +1,67 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model RecipeCraft.Models.Recipe
+
 @{
+    ViewData["Title"] = Model.Title;
 }
+
+<div class="container mt-4 recipe-container">
+    <div class="mb-3">
+        <a asp-action="Index" class="btn btn-brand-outline">← Обратно към всички рецепти</a>
+    </div>
+
+    <div class="card recipe-card shadow-sm mb-4">
+        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+        {
+            <div class="recipe-img-container">
+                <img src="@Model.ImageUrl" class="recipe-img" alt="@Model.Title" />
+            </div>
+        }
+
+        <div class="card-body p-4">
+            <h1 class="card-title fw-bold mb-3">@Model.Title</h1>
+
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+                <span class="badge badge-category p-2">
+                    @(Model.Category != null ? Model.Category.Name : "Без категория")
+                </span>
+                <span class="badge badge-time p-2">
+                    @Model.PrepTimeMinutes минути
+                </span>
+                <span class="text-muted ms-2">
+                    <small>Автор: <strong>@(Model.User?.Username ?? "Няма автор")</strong></small>
+                </span>
+                <span class="text-muted ms-auto">
+                    <small>Публикувано на: @Model.CreatedOn.ToString("dd.MM.yyyy HH:mm")</small>
+                </span>
+            </div>
+
+            <hr style="border-color: var(--brand-coffee); opacity: 0.2;" />
+
+            <div class="mb-4">
+                <h4 class="fw-bold section-title mb-3">Необходими продукти:</h4>
+                <p class="card-text mb-0 p-3 rounded" style="white-space: pre-line; line-height: 1.6; background-color: rgba(244, 196, 48, 0.08);">@Model.Ingredients</p>
+            </div>
+
+            <div class="mb-4">
+                <h4 class="fw-bold section-title mb-3">Начин на приготвяне:</h4>
+                <p class="card-text mb-0 p-3 rounded" style="white-space: pre-line; line-height: 1.6; background-color: rgba(244, 196, 48, 0.08);">@Model.Instructions</p>
+            </div>
+
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <div class="d-flex gap-2 justify-content-end mt-4 pt-3 border-top">
+                    <form asp-controller="Favorites" asp-action="Toggle" method="post" class="d-inline">
+                        <input type="hidden" name="recipeId" value="@Model.Id" />
+                        <button type="submit" class="btn btn-brand-primary">Любима</button>
+                    </form>
+
+                    @if ((Model.User != null && Model.User.Username == User.Identity.Name) || User.IsInRole("Admin") || User.Identity.Name == "admin")
+                    {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-brand-primary">Редактирай</a>
+                        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">Изтрий</a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
