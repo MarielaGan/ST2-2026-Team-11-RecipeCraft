@@ -1,38 +1,52 @@
-﻿@model RecipeCraft.Models.User
+﻿@model RecipeCraft.Models.User 
 
-<div class="container mt-4" style="max-width: 600px;">
-    <div class="card shadow-sm p-4">
-        <h2>👤 Преглед на профил</h2>
-        <hr />
-        <dl class="row">
-            <dt class="col-sm-4">Username:</dt>
-            <dd class="col-sm-8">@Model.Username</dd>
+@{
+    ViewData["Title"] = "Преглед на профил";
+}
 
-            <dt class="col-sm-4">Име и Фамилия:</dt>
-            <dd class="col-sm-8">@Model.FirstName @Model.LastName</dd>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-sm profile-card">
+            
+            <!-- ЖЪЛТА ЗАГЛАВНА ЛЕНТА -->
+            <div class="card-header profile-card-header text-center py-3">
+                <h3 class="mb-0 fw-bold">Преглед на профил</h3>
+            </div>
 
-            <dt class="col-sm-4">Email:</dt>
-            <dd class="col-sm-8">@Model.Email</dd>
+            <!-- СЪДЪРЖАНИЕ -->
+            <div class="card-body p-4 bg-white">
+                <div class="row mb-3 align-items-center">
+                    <div class="col-sm-4 fw-bold text-brand-dark">Username:</div>
+                    <div class="col-sm-8 text-secondary">@Model.Username</div>
+                </div>
 
-            <dt class="col-sm-4">Роля:</dt>
-            <dd class="col-sm-8"><span class="badge bg-info text-dark">@Model.Role</span></dd>
-        </dl>
+                <div class="row mb-3 align-items-center">
+                    <div class="col-sm-4 fw-bold text-brand-dark">Име и Фамилия:</div>
+                    <div class="col-sm-8 text-secondary">@Model.FirstName @Model.LastName</div>
+                </div>
 
-        <div class="d-flex justify-content-between mt-4">
-            @if (User.IsInRole("Admin") || User.Identity?.Name == "admin")
-            {
-                <a asp-action="Index" class="btn btn-secondary">Назад към списъка</a>
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Редактирай</a>
-            }
-            else
-            {
-                <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Към начална страница</a>
-                <a asp-action="EditProfile" class="btn btn-warning">✏️ Редактирай профила</a>
-                
-                <form asp-action="DeleteProfile" method="post" onsubmit="return confirm('Сигурни ли сте, че искате да изтриете профила си?');" class="d-inline">
-                    <button type="submit" class="btn btn-outline-danger">🗑️ Изтрий</button>
-                </form>
-            }
+                <div class="row mb-3 align-items-center">
+                    <div class="col-sm-4 fw-bold text-brand-dark">Email:</div>
+                    <div class="col-sm-8 text-secondary">@Model.Email</div>
+                </div>
+            </div>
+
+            <!-- БУТОНИ В ПОДНОЖИЕТО -->
+            <div class="card-footer bg-light p-3 border-0 d-flex justify-content-between flex-wrap gap-2">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-brand-secondary">
+                    Към начална страница
+                </a>
+
+                <div class="d-flex gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-brand-primary">
+                        Редактирай профила
+                    </a>
+                    
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        Изтрий
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

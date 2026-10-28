@@ -306,6 +306,16 @@ namespace RecipeCraft.Controllers
                     if (!await _database.UserExistsByIdAsync(user.Id)) return NotFound();
                     else throw;
                 }
+
+                // Проверяваме дали текущо влезлият потребител редактира СОБСТВЕНИЯ си профил
+                var currentUserIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (currentUserIdClaim != null && int.Parse(currentUserIdClaim) == user.Id)
+                {
+                    TempData["SuccessMessage"] = "Профилът е обновен успешно!";
+                    return RedirectToAction(nameof(Profile)); // Връща го в личния му профил
+                }
+
+                // Ако Администратор редактира друг потребител -> отива в списъка (Index)
                 return RedirectToAction(nameof(Index));
             }
             return View(user);

@@ -225,4 +225,87 @@ body {
     border-bottom: 2px solid var(--brand-yellow);
     padding-bottom: 5px;
 }
+/* ==========================================
+   6. ФОРМИ ЗА ВХОД И РЕГИСТРАЦИЯ (AUTH)
+   ========================================== */
+.auth-card {
+    border: 1px solid var(--brand-yellow) !important;
+    border-radius: 10px;
+    overflow: hidden;
+}
 
+.auth-card-header {
+    background-color: var(--brand-yellow) !important;
+    color: var(--brand-dark-brown) !important;
+}
+
+.form-control-auth:focus {
+    border-color: var(--brand-yellow) !important;
+    box-shadow: 0 0 0 0.25rem rgba(244, 196, 48, 0.25) !important;
+}
+
+.btn-auth-submit {
+    background-color: var(--brand-yellow) !important;
+    color: var(--brand-dark-brown) !important;
+    border: none !important;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+    .btn-auth-submit:hover {
+        background-color: #e0b028 !important;
+        color: #000000 !important;
+    }
+
+.auth-link {
+    color: var(--brand-coffee) !important;
+    text-decoration: underline;
+}
+
+    .auth-link:hover {
+        color: var(--brand-dark-brown) !important;
+    }
+/* ==========================================
+   7. ПРОФИЛНА КАРТА (PROFILE VIEW)
+   ========================================== */
+.profile-card {
+    border: 1px solid var(--brand-yellow) !important;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.profile-card-header {
+    background-color: var(--brand-yellow) !important;
+    color: var(--brand-dark-brown) !important;
+}
+
+.text-brand-dark {
+    color: var(--brand-dark-brown) !important;
+}
+
+/* Значка за роля (User / Admin) */
+.badge-role {
+    background-color: var(--brand-coffee) !important;
+    color: #ffffff !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 20px;
+}
+/* ==========================================
+   8. АДМИНИСТРАТИВНА ТАБЛИЦА (USERS INDEX)
+   ========================================== */
+.table-brand-header {
+    background-color: var(--brand-dark-brown) !important;
+    color: var(--brand-yellow) !important;
+}
+
+    .table-brand-header th {
+        background-color: var(--brand-dark-brown) !important;
+        color: var(--brand-yellow) !important;
+        border-bottom: 2px solid var(--brand-yellow) !important;
+        padding: 12px 16px;
+    }
+
+.table-hover tbody tr:hover {
+    background-color: rgba(244, 196, 48, 0.08) !important;
+}

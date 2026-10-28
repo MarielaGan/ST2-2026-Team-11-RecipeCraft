@@ -1,55 +1,91 @@
 ﻿@model RecipeCraft.Models.User
 
 @{
+    ViewData["Title"] = "Редакция на профил";
+    
+    // Проверяваме дали потребителят е администратор
+    bool isAdmin = User.IsInRole("Admin") || User.Identity?.Name == "admin";
+    
     // Проверяваме дали текущото действие е за личния профил
-    bool isSelfEdit = ViewContext.RouteData.Values["action"]?.ToString() == "EditProfile";
+    bool isSelfEdit = ViewContext.RouteData.Values["action"]?.ToString() == "EditProfile" 
+                      || User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.Id.ToString();
+                      
     string targetAction = isSelfEdit ? "EditProfile" : "Edit";
 }
 
-<div class="container mt-4" style="max-width: 500px;">
-    <h2>✏️ Редакция на потребител</h2>
-
-    <form asp-action="@targetAction" method="post" class="card card-body shadow-sm mt-3">
-        <input type="hidden" asp-for="Id" />
-        <input type="hidden" asp-for="PasswordHash" />
-        <input type="hidden" asp-for="Role" />
-
-        <div class="mb-3">
-            <label asp-for="Username" class="form-label fw-bold"></label>
-            <input asp-for="Username" class="form-control" />
-            <span asp-validation-for="Username" class="text-danger"></span>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label asp-for="FirstName" class="form-label fw-bold"></label>
-                <input asp-for="FirstName" class="form-control" />
-                <span asp-validation-for="FirstName" class="text-danger"></span>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6" style="max-width: 520px;">
+        <div class="card shadow-sm auth-card border-0">
+            
+            <!-- ЖЪЛТА ЗАГЛАВНА ЛЕНТА -->
+            <div class="card-header auth-card-header text-center py-3">
+                <h3 class="mb-0 fw-bold">Редакция на потребител</h3>
             </div>
-            <div class="col-md-6">
-                <label asp-for="LastName" class="form-label fw-bold"></label>
-                <input asp-for="LastName" class="form-control" />
-                <span asp-validation-for="LastName" class="text-danger"></span>
+
+            <!-- ФОРМА ЗА РЕДАКЦИЯ -->
+            <div class="card-body p-4 bg-white">
+                <form asp-action="@targetAction" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="PasswordHash" />
+                    <input type="hidden" asp-for="Role" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <!-- Потребителско име -->
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="Username" class="form-control form-control-auth" />
+                        <span asp-validation-for="Username" class="text-danger"></span>
+                    </div>
+
+                    <!-- Име и Фамилия -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="FirstName" class="form-label fw-semibold text-dark"></label>
+                            <input asp-for="FirstName" class="form-control form-control-auth" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="LastName" class="form-label fw-semibold text-dark"></label>
+                            <input asp-for="LastName" class="form-control form-control-auth" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <!-- Имейл -->
+                    <div class="mb-4">
+                        <label asp-for="Email" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="Email" type="email" class="form-control form-control-auth" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <!-- БУТОНИ -->
+                    <div class="d-flex justify-content-between align-items-center pt-2">
+                        @if (isAdmin)
+                        {
+                            <!-- За администратори: бутонът Назад БИНАГИ отива към Управление на потребители (Index) -->
+                            <a asp-action="Index" class="btn btn-brand-secondary px-4">
+                                Назад
+                            </a>
+                        }
+                        else
+                        {
+                            <!-- За обикновени потребители: бутонът Назад отива към личния профил (Profile) -->
+                            <a asp-action="Profile" class="btn btn-brand-secondary px-4">
+                                Назад
+                            </a>
+                        }
+
+                        <button type="submit" class="btn btn-brand-primary px-4 shadow-sm">
+                            Запази промените
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
-
-        <div class="mb-3">
-            <label asp-for="Email" class="form-label fw-bold"></label>
-            <input asp-for="Email" type="email" class="form-control" />
-            <span asp-validation-for="Email" class="text-danger"></span>
-        </div>
-
-        <div class="d-flex justify-content-between mt-3">
-            @if (isSelfEdit || !(User.IsInRole("Admin") || User.Identity?.Name == "admin"))
-            {
-                <a asp-action="Profile" class="btn btn-outline-secondary">Отказ</a>
-            }
-            else
-            {
-                <a asp-action="Index" class="btn btn-outline-secondary">Отказ</a>
-            }
-
-            <button type="submit" class="btn btn-primary">Запази промените</button>
-        </div>
-    </form>
+    </div>
 </div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -6,34 +6,41 @@
 
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white text-center">
-                <h3>Вход</h3>
+        <div class="card shadow-sm auth-card">
+            <div class="card-header auth-card-header text-center py-3">
+                <h3 class="mb-0 fw-bold">Вход</h3>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4 bg-white">
                 <form asp-action="Login" method="post">
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                     <div class="mb-3">
-                        <label asp-for="Username" class="form-label">Потребителско име</label>
-                        <input asp-for="Username" class="form-control" placeholder="Въведете потребителско име" />
+                        <label asp-for="Username" class="form-label fw-semibold text-dark">Потребителско име</label>
+                        <input asp-for="Username" class="form-control form-control-auth" placeholder="Въведете потребителско име" />
                         <span asp-validation-for="Username" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Password" class="form-label">Парола</label>
-                        <input asp-for="Password" type="password" class="form-control" placeholder="Въведете парола" />
+                        <label asp-for="Password" class="form-label fw-semibold text-dark">Парола</label>
+                        <input asp-for="Password" type="password" class="form-control form-control-auth" placeholder="Въведете парола" />
                         <span asp-validation-for="Password" class="text-danger"></span>
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary">Вход</button>
+                        <button type="submit" class="btn btn-auth-submit py-2 fw-bold shadow-sm">Вход</button>
                     </div>
                 </form>
             </div>
-            <div class="card-footer text-center">
-                <small>Нямате профил? <a asp-action="Register">Регистрирайте се тук</a></small>
+            <div class="card-footer text-center py-3 bg-light border-0">
+                <small class="text-muted">
+                    Нямате профил? 
+                    <a asp-action="Register" class="auth-link fw-bold ms-1">Регистрирайте се тук</a>
+                </small>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
