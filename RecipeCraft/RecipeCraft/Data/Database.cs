@@ -190,23 +190,25 @@ namespace RecipeCraft.Data
         // ==========================================
         public async Task<IEnumerable<User>> GetFilteredUsersAsync(string? searchString, string? roleFilter)
         {
-            var query = _context.Users.AsQueryable();
+            var users = await _context.Users.ToListAsync(); // Изтегляне в паметта
 
-            if (!string.IsNullOrEmpty(searchString))
+            if (!string.IsNullOrWhiteSpace(searchString))
             {
-                searchString = searchString.ToLower();
-                query = query.Where(u => u.Username.ToLower().Contains(searchString)
-                                      || u.FirstName.ToLower().Contains(searchString)
-                                      || u.LastName.ToLower().Contains(searchString)
-                                      || u.Email.ToLower().Contains(searchString));
+                string search = searchString.Trim().ToLower();
+                users = users.Where(u =>
+                    (u.Username != null && u.Username.ToLower().Contains(search)) ||
+                    (u.FirstName != null && u.FirstName.ToLower().Contains(search)) ||
+                    (u.LastName != null && u.LastName.ToLower().Contains(search)) ||
+                    (u.Email != null && u.Email.ToLower().Contains(search))
+                ).ToList();
             }
 
-            if (!string.IsNullOrEmpty(roleFilter))
+            if (!string.IsNullOrWhiteSpace(roleFilter))
             {
-                query = query.Where(u => u.Role == roleFilter);
+                users = users.Where(u => u.Role == roleFilter).ToList();
             }
 
-            return await query.ToListAsync();
+            return users;
         }
 
         public async Task<User?> GetUserByIdAsync(int id)
