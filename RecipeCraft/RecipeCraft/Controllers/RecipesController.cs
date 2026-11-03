@@ -33,10 +33,10 @@ namespace RecipeCraft.Controllers
         }
 
         // ==========================================
-        // 1. SELECT WITH FILTER & GEMINI AI SEARCH
+        // 1. SELECT WITH FILTER, GEMINI AI SEARCH & PAGINATION
         // ==========================================
         [AllowAnonymous]
-        public async Task<IActionResult> Index(string? searchString, string? category, string? aiQuery)
+        public async Task<IActionResult> Index(string? searchString, string? category, string? aiQuery, int? pageNumber)
         {
             ViewBag.Categories = await _context.Categories.ToListAsync();
 
@@ -44,6 +44,13 @@ namespace RecipeCraft.Controllers
             ViewData["CurrentCategory"] = category;
             ViewBag.AiQuery = aiQuery;
 
+            // Вземаме задедената бройка рецепти от глобалните настройки
+            int pageSize = AppSettingsManager.Instance.Settings.RecipesPerPage;
+            if (pageSize <= 0) pageSize = 3; // По подразбиране, ако не е зададено
+
+            int pageIndex = pageNumber ?? 1;
+
+            // 1. Обработка на AI търсене с Gemini
             if (!string.IsNullOrWhiteSpace(aiQuery))
             {
                 string trimmedQuery = aiQuery.Trim();
@@ -53,7 +60,8 @@ namespace RecipeCraft.Controllers
                 if (!geminiResult.IsSuccess || geminiResult.Query is null)
                 {
                     ViewBag.Error = geminiResult.Error ?? "Възникна грешка при обработката на заявката от ИИ.";
-                    return View(await _context.Recipes.Include(r => r.Category).Include(r => r.User).ToListAsync());
+                    var fallbackQuery = _context.Recipes.Include(r => r.Category).Include(r => r.User).AsQueryable();
+                    return View(await PaginatedList<Recipe>.CreateAsync(fallbackQuery.AsNoTracking(), pageIndex, pageSize));
                 }
 
                 try
@@ -64,30 +72,33 @@ namespace RecipeCraft.Controllers
                         .Select(p => new Microsoft.Data.Sqlite.SqliteParameter(p.Key, p.Value))
                         .ToArray();
 
-                    var aiRecipes = await _context.Recipes
+                    var aiRecipesQuery = _context.Recipes
                         .FromSqlRaw(sqlCommand.Sql, sqlParams)
                         .Include(r => r.Category)
                         .Include(r => r.User)
-                        .ToListAsync();
+                        .AsQueryable();
 
                     ViewBag.RawJson = geminiResult.RawJson;
                     ViewBag.GeneratedSql = sqlCommand.ReadableSql;
                     ViewBag.Explanation = geminiResult.Query.Explanation;
 
-                    return View(aiRecipes);
+                    return View(await PaginatedList<Recipe>.CreateAsync(aiRecipesQuery.AsNoTracking(), pageIndex, pageSize));
                 }
                 catch (ArgumentException ex)
                 {
                     ViewBag.Error = $"Грешка при превод на JSONQuery към SQL: {ex.Message}";
-                    return View(await _context.Recipes.Include(r => r.Category).Include(r => r.User).ToListAsync());
+                    var fallbackQuery = _context.Recipes.Include(r => r.Category).Include(r => r.User).AsQueryable();
+                    return View(await PaginatedList<Recipe>.CreateAsync(fallbackQuery.AsNoTracking(), pageIndex, pageSize));
                 }
                 catch (Exception ex)
                 {
                     ViewBag.Error = $"Възникна системна грешка: {ex.Message}";
-                    return View(await _context.Recipes.Include(r => r.Category).Include(r => r.User).ToListAsync());
+                    var fallbackQuery = _context.Recipes.Include(r => r.Category).Include(r => r.User).AsQueryable();
+                    return View(await PaginatedList<Recipe>.CreateAsync(fallbackQuery.AsNoTracking(), pageIndex, pageSize));
                 }
             }
 
+            // 2. Стандартна заявка с филтри
             var query = _context.Recipes
                 .Include(r => r.Category)
                 .Include(r => r.User)
@@ -103,7 +114,8 @@ namespace RecipeCraft.Controllers
                 query = query.Where(r => r.Category != null && r.Category.Name == category);
             }
 
-            return View(await query.ToListAsync());
+            // Използваме PaginatedList за асинхронно разделяне на страници
+            return View(await PaginatedList<Recipe>.CreateAsync(query.AsNoTracking(), pageIndex, pageSize));
         }
 
         // ==========================================
@@ -174,7 +186,6 @@ namespace RecipeCraft.Controllers
 
             if (ModelState.IsValid)
             {
-                // 💡 FACTORY PATTERN: Използваме фабриката за изграждане на обекта и служебните му данни
                 var newRecipe = _recipeFactory.CreateRecipe(
                     recipe.Title,
                     recipe.CategoryId,
@@ -344,7 +355,7 @@ namespace RecipeCraft.Controllers
         // ==========================================
         [Authorize]
         [HttpGet]
-        public async Task<IActionResult> MyRecipes()
+        public async Task<IActionResult> MyRecipes(int? pageNumber)
         {
             var currentUserId = await GetCurrentUserIdAsync();
             if (currentUserId == null)
@@ -352,14 +363,19 @@ namespace RecipeCraft.Controllers
                 return RedirectToAction("Login", "Users");
             }
 
-            var myRecipes = await _context.Recipes
+            int pageSize = AppSettingsManager.Instance.Settings.RecipesPerPage;
+            if (pageSize <= 0) pageSize = 3;
+
+            int pageIndex = pageNumber ?? 1;
+
+            var myRecipesQuery = _context.Recipes
                 .Include(r => r.Category)
                 .Include(r => r.User)
                 .Where(r => r.UserId == currentUserId.Value)
                 .OrderByDescending(r => r.CreatedOn)
-                .ToListAsync();
+                .AsQueryable();
 
-            return View("Index", myRecipes);
+            return View("Index", await PaginatedList<Recipe>.CreateAsync(myRecipesQuery.AsNoTracking(), pageIndex, pageSize));
         }
 
         // ==========================================

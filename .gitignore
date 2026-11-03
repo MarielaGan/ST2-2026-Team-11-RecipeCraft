@@ -401,9 +401,9 @@ FodyWeavers.xsd
 *.sln.iml
 
 # SQLite database files
-*.db
-*.db-shm
-*.db-wal
+#*.db
+#*.db-shm
+#*.db-wal
 
 # Игнориране на локални конфигурации с API ключове
 appsettings.Development.json

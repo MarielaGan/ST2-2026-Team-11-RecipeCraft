@@ -1,12 +1,12 @@
-﻿@{
+﻿@model IEnumerable<RecipeCraft.Models.Recipe>
+
+@{
     ViewData["Title"] = "Добре дошли в RecipeCraft";
 }
 
 <div class="container my-5 py-4 text-center">
-    <!-- Икона и заглавие -->
-    <div class="mb-3">
-        <span class="fs-1"></span>
-    </div>
+    
+  
     
     <h1 class="display-3 fw-bold mb-3" style="color: var(--brand-dark-brown);">
         Добре дошли в <span style="color: #c9930a;">RecipeCraft</span>!
@@ -17,13 +17,57 @@
         Открийте страхотни рецепти или споделете вашите кулинарни шедьоври.
     </p>
 
-    <!-- Основен апетитен бутон -->
+    <!-- Основен бутон -->
     <div class="d-flex justify-content-center gap-3 mb-4">
         <a asp-controller="Recipes" asp-action="Index" class="btn btn-brand-clean-hero px-4 py-3 fs-5 fw-bold shadow-sm">
             Разгледай всички рецепти
         </a>
     </div>
 
-    <!-- Декоративна топла линия под блока -->
-    <div class="mx-auto" style="width: 120px; height: 3px; background-color: var(--brand-yellow); border-radius: 2px;"></div>
+    <!-- Декоративна линия -->
+    <div class="mx-auto mb-5" style="width: 120px; height: 3px; background-color: var(--brand-yellow); border-radius: 2px;"></div>
+
+    <!-- СЕКЦИЯ С КАРТИЧКИ: ПОСЛЕДНО ДОБАВЕНИ РЕЦЕПТИ -->
+    <h3 class="mb-4 text-center fw-bold" style="color: var(--brand-dark-brown);"> Последни рецепти</h3>
+
+    <div class="row text-start justify-content-center">
+        @if (Model == null || !Model.Any())
+        {
+            <div class="col-12 text-center text-muted py-4">
+                <p class="fs-5">Все още няма добавени рецепти. Бъдете първите, които ще добавят!</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var recipe in Model)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0 recipe-card overflow-hidden">
+                        <!-- СНИМКАТА НА РЕЦЕПТАТА -->
+                        @if (!string.IsNullOrEmpty(recipe.ImageUrl))
+                        {
+                            <img src="@recipe.ImageUrl" class="card-img-top" alt="@recipe.Title" style="height: 200px; object-fit: cover;" />
+                        }
+
+                        <div class="card-body d-flex flex-column p-4">
+                            <!-- ИМЕТО НА РЕЦЕПТАТА -->
+                            <h5 class="card-title fw-bold mb-2" style="color: var(--brand-dark-brown);">@recipe.Title</h5>
+                            
+                            <!-- ВРЕМЕТО ЗА ПРИГОТВЯНЕ -->
+                            <p class="card-text text-muted small mb-3">
+                                 Време за приготвяне: @recipe.PrepTimeMinutes мин
+                            </p>
+                            
+                            <!-- БУТОН ЗА КЪМ ЦЯЛАТА РЕЦЕПТА -->
+                            <div class="mt-auto pt-2">
+                                <a asp-controller="Recipes" asp-action="Details" asp-route-id="@recipe.Id" class="btn btn-brand-primary w-100 text-center fw-bold">
+                                    Виж цялата рецепта →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
 </div>
