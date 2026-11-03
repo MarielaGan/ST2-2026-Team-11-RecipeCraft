@@ -5,6 +5,7 @@ using RecipeCraft.Configuration;
 using RecipeCraft.Data;
 using RecipeCraft.Models;
 using RecipeCraft.Services;
+using RecipeCraft.Factories; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // repository pattern
 builder.Services.AddScoped<IDatabase, Database>();
+
+// Регистрираме UserFactory и RecipeFactory в Dependency Injection контейнера
+builder.Services.AddScoped<IUserFactory, UserFactory>();
+builder.Services.AddScoped<IRecipeFactory, RecipeFactory>();
 
 // 2. Регистрация на Singleton за AppSettings
 builder.Services.AddSingleton(AppSettingsManager.Instance);

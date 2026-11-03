@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
+using RecipeCraft.Factories;
 using RecipeCraft.Models;
 
 namespace RecipeCraft.Controllers
@@ -12,10 +13,16 @@ namespace RecipeCraft.Controllers
     public class UsersController : Controller
     {
         private readonly IDatabase _database;
+        private readonly IUserFactory _userFactory;
 
-        public UsersController(IDatabase database)
+        /// <summary>
+        /// Конструктор с инжектиране на бази данни (Repository Pattern) 
+        /// и фабрика за потребители (Factory Pattern).
+        /// </summary>
+        public UsersController(IDatabase database, IUserFactory userFactory)
         {
             _database = database;
+            _userFactory = userFactory;
         }
 
         // ==========================================
@@ -81,7 +88,7 @@ namespace RecipeCraft.Controllers
         }
 
         // ==========================================
-        // 3. REGISTER (Регистрация)
+        // 3. REGISTER (Регистрация на обикновен потребител)
         // ==========================================
         [HttpGet]
         public IActionResult Register()
@@ -105,17 +112,15 @@ namespace RecipeCraft.Controllers
 
             if (ModelState.IsValid)
             {
-                var user = new User
-                {
-                    Username = model.Username,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    Email = model.Email,
-                    Role = "User"
-                };
-
-                var hasher = new PasswordHasher<User>();
-                user.PasswordHash = hasher.HashPassword(user, model.Password);
+                // FACTORY PATTERN: Капсулирано създаване на обект и хеширане на парола
+                var user = _userFactory.CreateUser(
+                    model.Username,
+                    model.Email,
+                    model.FirstName,
+                    model.LastName,
+                    model.Password,
+                    role: "User"
+                );
 
                 await _database.AddUserAsync(user);
 
@@ -273,9 +278,17 @@ namespace RecipeCraft.Controllers
 
             if (ModelState.IsValid)
             {
-                var hasher = new PasswordHasher<User>();
-                user.PasswordHash = hasher.HashPassword(user, user.PasswordHash);
-                await _database.AddUserAsync(user);
+                // FACTORY PATTERN: Използва се за създаване на новия потребител и хеширане на паролата му
+                var newUser = _userFactory.CreateUser(
+                    user.Username,
+                    user.Email,
+                    user.FirstName,
+                    user.LastName,
+                    user.PasswordHash, // Подаване на суровата парола от формата
+                    user.Role ?? "User"
+                );
+
+                await _database.AddUserAsync(newUser);
                 return RedirectToAction(nameof(Index));
             }
             return View(user);
@@ -307,15 +320,15 @@ namespace RecipeCraft.Controllers
                     else throw;
                 }
 
-                // Проверяваме дали текущо влезлият потребител редактира СОБСТВЕНИЯ си профил
+                // Проверка дали потребителят редактира СОБСТВЕНИЯ си профил
                 var currentUserIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (currentUserIdClaim != null && int.Parse(currentUserIdClaim) == user.Id)
                 {
                     TempData["SuccessMessage"] = "Профилът е обновен успешно!";
-                    return RedirectToAction(nameof(Profile)); // Връща го в личния му профил
+                    return RedirectToAction(nameof(Profile));
                 }
 
-                // Ако Администратор редактира друг потребител -> отива в списъка (Index)
+                // Всички останали административни редакции връщат към списъка с потребители
                 return RedirectToAction(nameof(Index));
             }
             return View(user);

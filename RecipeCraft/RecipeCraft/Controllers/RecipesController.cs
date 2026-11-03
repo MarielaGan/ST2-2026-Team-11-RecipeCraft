@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using RecipeCraft.Data;
+using RecipeCraft.Factories;
 using RecipeCraft.Models;
 using RecipeCraft.Services;
 using System.Security.Claims;
@@ -12,12 +13,21 @@ namespace RecipeCraft.Controllers
     public class RecipesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IDatabase _database;
+        private readonly IRecipeFactory _recipeFactory;
         private readonly IGeminiQueryService _geminiService;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public RecipesController(ApplicationDbContext context, IGeminiQueryService geminiService, IWebHostEnvironment webHostEnvironment)
+        public RecipesController(
+            ApplicationDbContext context,
+            IDatabase database,
+            IRecipeFactory recipeFactory,
+            IGeminiQueryService geminiService,
+            IWebHostEnvironment webHostEnvironment)
         {
             _context = context;
+            _database = database;
+            _recipeFactory = recipeFactory;
             _geminiService = geminiService;
             _webHostEnvironment = webHostEnvironment;
         }
@@ -139,10 +149,9 @@ namespace RecipeCraft.Controllers
                 return RedirectToAction("Login", "Users");
             }
 
-            recipe.UserId = currentUserId.Value;
-            recipe.CreatedOn = DateTime.Now;
-
             ModelState.Remove(nameof(Recipe.User));
+
+            string? uploadedImageUrl = null;
 
             if (imageFile != null && imageFile.Length > 0)
             {
@@ -160,12 +169,23 @@ namespace RecipeCraft.Controllers
                     await imageFile.CopyToAsync(fileStream);
                 }
 
-                recipe.ImageUrl = "/uploads/" + uniqueFileName;
+                uploadedImageUrl = "/uploads/" + uniqueFileName;
             }
 
             if (ModelState.IsValid)
             {
-                _context.Recipes.Add(recipe);
+                // 💡 FACTORY PATTERN: Използваме фабриката за изграждане на обекта и служебните му данни
+                var newRecipe = _recipeFactory.CreateRecipe(
+                    recipe.Title,
+                    recipe.CategoryId,
+                    currentUserId.Value,
+                    recipe.PrepTimeMinutes,
+                    recipe.Ingredients,
+                    recipe.Instructions,
+                    uploadedImageUrl
+                );
+
+                _context.Recipes.Add(newRecipe);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
@@ -356,7 +376,7 @@ namespace RecipeCraft.Controllers
             var username = User.Identity?.Name;
             if (!string.IsNullOrEmpty(username))
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+                var user = await _database.GetUserByUsernameAsync(username);
                 return user?.Id;
             }
 
