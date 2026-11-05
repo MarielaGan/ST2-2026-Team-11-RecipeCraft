@@ -73,7 +73,7 @@
     <div class="d-flex gap-2 mb-4">
         @if (User.Identity != null && User.Identity.IsAuthenticated)
         {
-            <a asp-action="Create" class="btn btn-success">+ Добави нова рецепта</a>
+            <a asp-action="Create" class="btn btn-brand-primary w-50 text-center fw-bold">+ Добави нова рецепта</a>
 
             @if (User.IsInRole("Admin") || User.Identity.Name == "admin")
             {
@@ -120,7 +120,7 @@
                             
                             <!-- ВРЕМЕ -->
                             <p class="card-text text-muted small mb-3">
-                                ⏱️ Време за приготвяне: @item.PrepTimeMinutes мин
+                                 Време за приготвяне: @item.PrepTimeMinutes мин
                             </p>
                             
                             <!-- БУТОН КЪМ ДЕТАЙЛИТЕ -->
