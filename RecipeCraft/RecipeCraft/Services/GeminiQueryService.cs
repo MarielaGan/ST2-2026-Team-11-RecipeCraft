@@ -48,7 +48,9 @@ namespace RecipeCraft.Services
 2. ВАЖНО ЗА ОТРИЦАНИЯ: Когато потребителят изключва нещо (напр. ""без месо"", ""без мляко"", ""не съдържа захар""), задължително използвай operator: ""notContains"".
 3. За числово търсене по времетраене (PrepTimeMinutes) използвай ""lessThan"", ""greaterThan"" или ""equals"".
 4. Всички стойности във ""value"" ТРЯБВА ДА БЪДАТ В КАВИЧКИ (string), дори когато представляват числа! Пример: ""60"".
-5. По подразбиране logicalOperator e ""AND"", orderBy e ""Title"", sortDirection e ""ASC"".";
+5. По подразбиране logicalOperator e ""AND"", orderBy e ""Title"", sortDirection e ""ASC"".
+6. ВАЖНО ЗА КАТЕГОРИИ: Когато потребителят търси по категория (напр. """"основно"""", """"десерт"""", """"супа""""), стойността във """"value"""" ТРЯБВА ЗАДЪЛЖИТЕЛНО да започва с ГЛАВНА буква (напр. """"Основно"""", """"Десерти"""", """"Супи"""", """"Предястия"""")."";";
+
 
         public GeminiQueryService(HttpClient http, IOptions<ExternalApisOptions> options)
         {
