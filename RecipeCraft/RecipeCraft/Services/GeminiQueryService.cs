@@ -78,6 +78,7 @@ namespace RecipeCraft.Services
                 systemInstruction = new { parts = new[] { new { text = SystemPrompt } } },
                 contents = new[] { new { role = "user", parts = new[] { new { text = naturalLanguageQuery } } } },
                 generationConfig = new { temperature = 0.1, responseMimeType = "application/json" }
+
             };
 
             try
@@ -89,7 +90,6 @@ namespace RecipeCraft.Services
 
                 for (int i = 0; i < maxRetries; i++)
                 {
-                    // Нов StringContent за всеки опит (един обект не може да се изпраща повторно)
                     using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
                     response = await _http.PostAsync(endpoint, content, cancellationToken);
 
@@ -127,30 +127,24 @@ namespace RecipeCraft.Services
         // Мултимодална функционалност: валидиране на снимка спрямо рецепта
         // =========================================================================
         public async Task<(bool IsMatch, string Reason)> ValidateRecipeImageAsync(
-            IFormFile imageFile,
-            string recipeTitle,
-            string ingredients,
-            CancellationToken cancellationToken = default)
+    IFormFile imageFile,
+    string recipeTitle,
+    string ingredients,
+    CancellationToken cancellationToken = default)
         {
             if (imageFile == null || imageFile.Length == 0)
-            {
                 return (true, "Няма качена снимка за валидация.");
-            }
 
             var apiKey = _options.GeminiApiKey?.Trim();
             if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                return (false, "Спиране на създаването: Липсва Gemini API ключ в настройките.");
-            }
+                return (false, "Липсва Gemini API ключ в настройките.");
 
             try
             {
-                // 1. Четене на снимката и преобразуване в Base64
                 using var memoryStream = new MemoryStream();
                 await imageFile.CopyToAsync(memoryStream, cancellationToken);
                 string base64Image = Convert.ToBase64String(memoryStream.ToArray());
 
-                // 2. Подготовка на мултимодален промпт
                 string prompt = $@"
 Анализирай предоставеното изображение и прецени дали то съответства на кулинарната рецепта:
 Име на рецептата: ""{recipeTitle}""
@@ -159,42 +153,37 @@ namespace RecipeCraft.Services
 Отговори в следния STRICT JSON формат (без допълнителен текст или ```json fences):
 {{
   ""isMatch"": true или false,
-  ""reason"": ""Кратко обяснение на български език защо снимката съответства или не съответства (напр. 'На снимката се вижда пилешка супа, което съответства на рецептата' или 'На снимката има мусака/кола/компютър, а не пиле с ориз').""
+  ""reason"": ""Кратко обяснение на български език защо снимката съответства или не съответства.""
 }}";
 
-                // 3. Мултимодален payload за Gemini API
                 var requestBody = new
                 {
                     contents = new[]
                     {
+                new
+                {
+                    parts = new object[]
+                    {
+                        new { text = prompt },
                         new
                         {
-                            parts = new object[]
+                            inline_data = new
                             {
-                                new { text = prompt },
-                                new
-                                {
-                                    inline_data = new
-                                    {
-                                        mime_type = string.IsNullOrWhiteSpace(imageFile.ContentType) ? "image/jpeg" : imageFile.ContentType,
-                                        data = base64Image
-                                    }
-                                }
+                                mime_type = string.IsNullOrWhiteSpace(imageFile.ContentType) ? "image/jpeg" : imageFile.ContentType,
+                                data = base64Image
                             }
                         }
-                    },
+                    }
+                }
+            },
                     generationConfig = new { temperature = 0.1, responseMimeType = "application/json" }
                 };
 
                 var requestJson = JsonSerializer.Serialize(requestBody);
 
-                // Списък с модели: основен + резервни (без повторения)
                 var modelsToTry = new List<string> { GetConfiguredModel() };
                 foreach (var fallback in FallbackModels)
-                {
-                    if (!modelsToTry.Contains(fallback))
-                        modelsToTry.Add(fallback);
-                }
+                    if (!modelsToTry.Contains(fallback)) modelsToTry.Add(fallback);
 
                 string responseText = string.Empty;
                 int lastStatusCode = 0;
@@ -205,35 +194,23 @@ namespace RecipeCraft.Services
                 {
                     var requestUri = new Uri(BuildEndpoint(modelName, apiKey), UriKind.Absolute);
 
-                    try
+                    using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+                    using var response = await _http.PostAsync(requestUri, content, cancellationToken);
+
+                    if (response.IsSuccessStatusCode)
                     {
-                        using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
-                        using var response = await _http.PostAsync(requestUri, content, cancellationToken);
-
-                        if (response.IsSuccessStatusCode)
-                        {
-                            responseText = await response.Content.ReadAsStringAsync(cancellationToken);
-                            allOverloaded = false;
-                            break;
-                        }
-
-                        lastStatusCode = (int)response.StatusCode;
-                        lastErrorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
-                        // Претоварване (503 / 429) или несъществуващ модел (404) -> опитваме със следващия
-                        if (IsOverloaded(response) || lastStatusCode == 404)
-                        {
-                            continue;
-                        }
-
-                        // Друга грешка (напр. 400, 403) - няма смисъл да пробваме другите модели
+                        responseText = await response.Content.ReadAsStringAsync(cancellationToken);
                         allOverloaded = false;
                         break;
                     }
-                    catch (Exception ex)
-                    {
-                        return (false, $"Грешка при заявката към {modelName}: {ex.Message}");
-                    }
+
+                    lastStatusCode = (int)response.StatusCode;
+                    lastErrorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                    if (IsOverloaded(response) || lastStatusCode == 404) continue;
+
+                    allOverloaded = false;
+                    break;
                 }
 
                 if (string.IsNullOrEmpty(responseText))
@@ -245,8 +222,7 @@ namespace RecipeCraft.Services
                 }
 
                 string rawAnswer = ExtractText(responseText) ?? "";
-                string cleanedJson = CleanJson(rawAnswer);
-                using var resultDoc = JsonDocument.Parse(cleanedJson);
+                using var resultDoc = JsonDocument.Parse(CleanJson(rawAnswer));
 
                 bool isMatch = resultDoc.RootElement.GetProperty("isMatch").GetBoolean();
                 string reason = resultDoc.RootElement.GetProperty("reason").GetString() ?? "";

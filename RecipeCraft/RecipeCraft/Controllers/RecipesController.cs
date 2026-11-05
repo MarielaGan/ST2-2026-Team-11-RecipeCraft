@@ -159,52 +159,26 @@ namespace RecipeCraft.Controllers
 
             ModelState.Remove(nameof(Recipe.User));
 
-            // 💡 1. МУЛТИМОДАЛНА ПРОВЕРКА С ИИ ПРЕДИ ВСЯКАКВИ ДРУГИ ДЕЙСТВИЯ
-            if (imageFile != null && imageFile.Length > 0)
+            bool hasImage = imageFile != null && imageFile.Length > 0;
+
+            // 1. AI валидация (само при снимка и валидна форма)
+            if (hasImage && ModelState.IsValid)
             {
                 var (isMatch, reason) = await _geminiService.ValidateRecipeImageAsync(
-                    imageFile,
-                    recipe.Title,
-                    recipe.Ingredients,
-                    HttpContext.RequestAborted);
+                    imageFile!, recipe.Title, recipe.Ingredients, HttpContext.RequestAborted);
 
                 if (!isMatch)
                 {
-                    // Добавяме грешката към фаталното състояние на модела
                     ModelState.AddModelError("ImageUrl", $"ИИ проверка: {reason}");
-                    ModelState.AddModelError(string.Empty, $"Снимката не отговаря на рецептата: {reason}");
-
                     ViewBag.AiValidationError = reason;
-
-                    var categoriesList = await _context.Categories.ToListAsync();
-                    ViewBag.CategoryId = new SelectList(categoriesList, "Id", "Name", recipe.CategoryId);
-
-                    // Спираме процеса тук - снимката не се запазва на диска и не се прави запис
-                    return View(recipe);
                 }
             }
 
-            // 💡 2. ЗАПИСВАНЕ НА СНИМКАТА НА ДИСКА САМО ПРИ УСПЕШНА ПРОВЕРКА
-            string? uploadedImageUrl = null;
-            if (imageFile != null && imageFile.Length > 0)
-            {
-                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(imageFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(fileStream);
-                }
-
-                uploadedImageUrl = "/uploads/" + uniqueFileName;
-            }
-
-            // 💡 3. ВАЛИДАЦИЯ И СЪЗДАВАНЕ ЧРЕЗ FACTORY PATTERN
+            // 2. Запис и създаване през Factory
             if (ModelState.IsValid)
             {
+                string? uploadedImageUrl = hasImage ? await SaveImageAsync(imageFile!) : null;
+
                 var newRecipe = _recipeFactory.CreateRecipe(
                     recipe.Title,
                     recipe.CategoryId,
@@ -212,8 +186,7 @@ namespace RecipeCraft.Controllers
                     recipe.PrepTimeMinutes,
                     recipe.Ingredients,
                     recipe.Instructions,
-                    uploadedImageUrl
-                );
+                    uploadedImageUrl);
 
                 _context.Recipes.Add(newRecipe);
                 await _context.SaveChangesAsync();
@@ -271,6 +244,7 @@ namespace RecipeCraft.Controllers
 
             recipe.UserId = existingRecipe.UserId;
             recipe.CreatedOn = existingRecipe.CreatedOn;
+            recipe.ImageUrl = existingRecipe.ImageUrl;
 
             ModelState.Remove(nameof(Recipe.User));
 
@@ -279,27 +253,36 @@ namespace RecipeCraft.Controllers
                 recipe.CategoryId = existingRecipe.CategoryId;
             }
 
-            if (imageFile != null && imageFile.Length > 0)
+            bool hasNewImage = imageFile != null && imageFile.Length > 0;
+
+            // 1. AI валидация - само при нова снимка
+            if (hasNewImage && ModelState.IsValid)
             {
-                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+                var (isMatch, reason) = await _geminiService.ValidateRecipeImageAsync(
+                    imageFile!, 
+                    recipe.Title, 
+                    recipe.Ingredients, 
+                    HttpContext.RequestAborted);
 
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(imageFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                if (!isMatch)
                 {
-                    await imageFile.CopyToAsync(fileStream);
+                    ModelState.AddModelError("ImageUrl", $"ИИ проверка: {reason}");
+                    ViewBag.AiValidationError = reason;
                 }
-                recipe.ImageUrl = "/uploads/" + uniqueFileName;
-            }
-            else
-            {
-                recipe.ImageUrl = existingRecipe.ImageUrl;
             }
 
             if (ModelState.IsValid)
             {
+                string? oldImageToDelete = null;
+
+                // 2. Запис на новата снимка
+                if (hasNewImage)
+                {
+                    oldImageToDelete = existingRecipe.ImageUrl;
+                    recipe.ImageUrl = await SaveImageAsync(imageFile!);
+                }
+
+                // 3. Запис в базата
                 try
                 {
                     _context.Update(recipe);
@@ -310,6 +293,8 @@ namespace RecipeCraft.Controllers
                     if (!await _context.Recipes.AnyAsync(r => r.Id == id)) return NotFound();
                     throw;
                 }
+
+                DeleteImage(oldImageToDelete);
 
                 return RedirectToAction(nameof(MyRecipes));
             }
@@ -416,6 +401,30 @@ namespace RecipeCraft.Controllers
             }
 
             return null;
+        }
+        private async Task<string> SaveImageAsync(IFormFile imageFile)
+        {
+            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            string uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(imageFile.FileName);
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using var fileStream = new FileStream(filePath, FileMode.Create);
+            await imageFile.CopyToAsync(fileStream);
+
+            return "/uploads/" + uniqueFileName;
+        }
+
+        private void DeleteImage(string? imageUrl)
+        {
+            if (string.IsNullOrEmpty(imageUrl)) return;
+
+            var path = Path.Combine(
+                _webHostEnvironment.WebRootPath,
+                imageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+
+            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
         }
     }
 }
