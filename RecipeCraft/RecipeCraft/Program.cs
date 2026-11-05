@@ -33,7 +33,7 @@ builder.Services.Configure<ExternalApisOptions>(
 // 4. Регистрация на Gemini HTTP услугата (IGeminiQueryService)
 builder.Services.AddHttpClient<IGeminiQueryService, GeminiQueryService>(client =>
 {
-    client.Timeout = TimeSpan.FromSeconds(30);
+    client.Timeout = TimeSpan.FromSeconds(60);
 });
 
 // 5. Добавяне на Cookie Authentication (С коригирани пътища към UsersController)

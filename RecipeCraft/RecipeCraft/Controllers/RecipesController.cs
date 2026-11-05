@@ -44,13 +44,11 @@ namespace RecipeCraft.Controllers
             ViewData["CurrentCategory"] = category;
             ViewBag.AiQuery = aiQuery;
 
-            // Вземаме задедената бройка рецепти от глобалните настройки
             int pageSize = AppSettingsManager.Instance.Settings.RecipesPerPage;
-            if (pageSize <= 0) pageSize = 3; // По подразбиране, ако не е зададено
+            if (pageSize <= 0) pageSize = 3;
 
             int pageIndex = pageNumber ?? 1;
 
-            // 1. Обработка на AI търсене с Gemini
             if (!string.IsNullOrWhiteSpace(aiQuery))
             {
                 string trimmedQuery = aiQuery.Trim();
@@ -98,7 +96,6 @@ namespace RecipeCraft.Controllers
                 }
             }
 
-            // 2. Стандартна заявка с филтри
             var query = _context.Recipes
                 .Include(r => r.Category)
                 .Include(r => r.User)
@@ -114,7 +111,6 @@ namespace RecipeCraft.Controllers
                 query = query.Where(r => r.Category != null && r.Category.Name == category);
             }
 
-            // Използваме PaginatedList за асинхронно разделяне на страници
             return View(await PaginatedList<Recipe>.CreateAsync(query.AsNoTracking(), pageIndex, pageSize));
         }
 
@@ -139,7 +135,7 @@ namespace RecipeCraft.Controllers
         }
 
         // ==========================================
-        // 3. INSERT (Добавяне на рецепта)
+        // 3. INSERT (Добавяне на рецепта с ИИ проверка)
         // ==========================================
         [Authorize]
         public async Task<IActionResult> Create()
@@ -163,15 +159,37 @@ namespace RecipeCraft.Controllers
 
             ModelState.Remove(nameof(Recipe.User));
 
-            string? uploadedImageUrl = null;
+            // 💡 1. МУЛТИМОДАЛНА ПРОВЕРКА С ИИ ПРЕДИ ВСЯКАКВИ ДРУГИ ДЕЙСТВИЯ
+            if (imageFile != null && imageFile.Length > 0)
+            {
+                var (isMatch, reason) = await _geminiService.ValidateRecipeImageAsync(
+                    imageFile,
+                    recipe.Title,
+                    recipe.Ingredients,
+                    HttpContext.RequestAborted);
 
+                if (!isMatch)
+                {
+                    // Добавяме грешката към фаталното състояние на модела
+                    ModelState.AddModelError("ImageUrl", $"ИИ проверка: {reason}");
+                    ModelState.AddModelError(string.Empty, $"Снимката не отговаря на рецептата: {reason}");
+
+                    ViewBag.AiValidationError = reason;
+
+                    var categoriesList = await _context.Categories.ToListAsync();
+                    ViewBag.CategoryId = new SelectList(categoriesList, "Id", "Name", recipe.CategoryId);
+
+                    // Спираме процеса тук - снимката не се запазва на диска и не се прави запис
+                    return View(recipe);
+                }
+            }
+
+            // 💡 2. ЗАПИСВАНЕ НА СНИМКАТА НА ДИСКА САМО ПРИ УСПЕШНА ПРОВЕРКА
+            string? uploadedImageUrl = null;
             if (imageFile != null && imageFile.Length > 0)
             {
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
                 string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(imageFile.FileName);
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
@@ -184,6 +202,7 @@ namespace RecipeCraft.Controllers
                 uploadedImageUrl = "/uploads/" + uniqueFileName;
             }
 
+            // 💡 3. ВАЛИДАЦИЯ И СЪЗДАВАНЕ ЧРЕЗ FACTORY PATTERN
             if (ModelState.IsValid)
             {
                 var newRecipe = _recipeFactory.CreateRecipe(

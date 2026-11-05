@@ -1,9 +1,21 @@
 ﻿@model RecipeCraft.Models.Recipe
 
 <div class="container mt-4" style="max-width: 600px;">
-    <h2>➕ Добавяне на нова рецепта</h2>
+    <h2>Добавяне на нова рецепта</h2>
 
     <form asp-action="Create" method="post" enctype="multipart/form-data" class="card card-body shadow-sm mt-3">
+
+        <!-- 💡 Валидация: Покажи само моделните грешки тук, за да няма дублиране -->
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3 fw-bold"></div>
+
+        <!-- 💡 ИИ Валидация: Покажи съобщението само веднъж в този alert -->
+        @if (ViewBag.AiValidationError != null)
+        {
+            <div class="alert alert-danger shadow-sm">
+                <strong>ИИ Валидация:</strong> @ViewBag.AiValidationError
+            </div>
+        }
+
         <div class="mb-3">
             <label asp-for="Title" class="form-label fw-bold">Име на рецептата</label>
             <input asp-for="Title" class="form-control" placeholder="напр. Мусака" />

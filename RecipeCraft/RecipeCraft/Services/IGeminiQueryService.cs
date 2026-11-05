@@ -12,5 +12,7 @@ namespace RecipeCraft.Services
     public interface IGeminiQueryService
     {
         Task<GeminiQueryResult> GenerateJsonQueryAsync(string naturalLanguageQuery, CancellationToken cancellationToken = default);
+
+        Task<(bool IsMatch, string Reason)> ValidateRecipeImageAsync(IFormFile imageFile, string recipeTitle, string ingredients, CancellationToken cancellationToken);
     }
 }
