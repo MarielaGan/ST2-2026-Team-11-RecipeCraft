@@ -5,10 +5,9 @@
 
     <form asp-action="Create" method="post" enctype="multipart/form-data" class="card card-body shadow-sm mt-3">
 
-        <!-- 💡 Валидация: Покажи само моделните грешки тук, за да няма дублиране -->
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3 fw-bold"></div>
 
-        <!-- 💡 ИИ Валидация: Покажи съобщението само веднъж в този alert -->
+        <!-- ИИ Валидация -->
         @if (ViewBag.AiValidationError != null)
         {
             <div class="alert alert-danger shadow-sm">
@@ -38,12 +37,6 @@
             <span asp-validation-for="CategoryId" class="text-danger"></span>
         </div>
 
-        <!-- ПОЛЕ ЗА СНИМКА -->
-        <div class="mb-3">
-            <label class="form-label fw-bold">Снимка на ястието</label>
-            <input type="file" name="imageFile" class="form-control" accept="image/*" />
-        </div>
-
         <div class="mb-3">
             <label asp-for="PrepTimeMinutes" class="form-label fw-bold">Време за приготвяне (в минути)</label>
             <input asp-for="PrepTimeMinutes" type="number" class="form-control" value="30" />
@@ -60,6 +53,12 @@
             <label asp-for="Instructions" class="form-label fw-bold">Начин на приготвяне</label>
             <textarea asp-for="Instructions" class="form-control" rows="4" placeholder="Запържете каймата..."></textarea>
             <span asp-validation-for="Instructions" class="text-danger"></span>
+        </div>
+        
+        <!-- ПОЛЕ ЗА СНИМКА -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Снимка на ястието</label>
+            <input type="file" name="imageFile" class="form-control" accept="image/*" />
         </div>
 
         <div class="d-flex justify-content-between mt-3">

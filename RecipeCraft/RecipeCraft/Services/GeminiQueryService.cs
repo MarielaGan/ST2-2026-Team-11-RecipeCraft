@@ -77,7 +77,8 @@ namespace RecipeCraft.Services
             {
                 systemInstruction = new { parts = new[] { new { text = SystemPrompt } } },
                 contents = new[] { new { role = "user", parts = new[] { new { text = naturalLanguageQuery } } } },
-                generationConfig = new { temperature = 0.1, responseMimeType = "application/json" }
+                //generationConfig = new { temperature = 0.1, responseMimeType = "application/json" }
+                generationConfig = new { temperature = 0.1, responseMimeType = "application/json", maxOutputTokens = 400, thinkingConfig = new { thinkingBudget = 0 } }
 
             };
 
@@ -126,11 +127,7 @@ namespace RecipeCraft.Services
         // =========================================================================
         // Мултимодална функционалност: валидиране на снимка спрямо рецепта
         // =========================================================================
-        public async Task<(bool IsMatch, string Reason)> ValidateRecipeImageAsync(
-    IFormFile imageFile,
-    string recipeTitle,
-    string ingredients,
-    CancellationToken cancellationToken = default)
+        public async Task<(bool IsMatch, string Reason)> ValidateRecipeImageAsync(IFormFile imageFile,string recipeTitle,string ingredients,CancellationToken cancellationToken = default)
         {
             if (imageFile == null || imageFile.Length == 0)
                 return (true, "Няма качена снимка за валидация.");
@@ -176,7 +173,8 @@ namespace RecipeCraft.Services
                     }
                 }
             },
-                    generationConfig = new { temperature = 0.1, responseMimeType = "application/json" }
+                    //generationConfig = new { temperature = 0.1, responseMimeType = "application/json" }
+                    generationConfig = new { temperature = 0.1, responseMimeType = "application/json", maxOutputTokens = 300, thinkingConfig = new { thinkingBudget = 0 } }
                 };
 
                 var requestJson = JsonSerializer.Serialize(requestBody);
