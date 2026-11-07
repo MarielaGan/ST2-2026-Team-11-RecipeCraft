@@ -18,9 +18,9 @@ namespace RecipeCraft.Data
             _context = context;
         }
 
-        // ==========================================
+       
         // 1. РЕЦЕПТИ
-        // ==========================================
+        
         public async Task<IEnumerable<Recipe>> GetAllRecipesWithDetailsAsync()
         {
             return await _context.Recipes
@@ -115,9 +115,9 @@ namespace RecipeCraft.Data
             return await _context.Recipes.AnyAsync(r => r.Id == id);
         }
 
-        // ==========================================
+        
         // 2. КАТЕГОРИИ
-        // ==========================================
+        
         public async Task<IEnumerable<Category>> GetAllCategoriesAsync()
         {
             return await _context.Categories.ToListAsync();
@@ -149,9 +149,9 @@ namespace RecipeCraft.Data
                 await _context.SaveChangesAsync();
             }
         }
-        // ==========================================
+        
         // 3. ЛЮБИМИ РЕЦЕПТИ
-        // ==========================================
+       
         public async Task<IEnumerable<FavoriteRecipe>> GetFavoritesByUserIdAsync(int userId)
         {
             return await _context.FavoriteRecipes
@@ -185,9 +185,9 @@ namespace RecipeCraft.Data
             await _context.SaveChangesAsync();
         }
 
-        // ==========================================
+       
         // 4. ПОТРЕБИТЕЛИ
-        // ==========================================
+        
         public async Task<IEnumerable<User>> GetFilteredUsersAsync(string? searchString, string? roleFilter)
         {
             var users = await _context.Users.ToListAsync(); // Изтегляне в паметта

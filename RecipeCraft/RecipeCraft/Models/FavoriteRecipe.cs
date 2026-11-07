@@ -10,7 +10,7 @@ namespace RecipeCraft.Models
         public int UserId { get; set; }
         public User? User { get; set; }
 
-        // Външен ключ към Рецептата
+        
         public int RecipeId { get; set; }
         public Recipe? Recipe { get; set; }
 

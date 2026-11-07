@@ -9,7 +9,7 @@ namespace RecipeCraft.Data
     /// </summary>
     public interface IDatabase
     {
-        // --- РЕЦЕПТИ ---
+        // РЕЦЕПТИ 
         Task<IEnumerable<Recipe>> GetAllRecipesWithDetailsAsync();
         Task<IEnumerable<Recipe>> GetFilteredRecipesAsync(string? searchString, string? category);
         Task<IEnumerable<Recipe>> GetRecipesFromSqlRawAsync(string sql, object[] parameters);
@@ -22,18 +22,18 @@ namespace RecipeCraft.Data
         Task DeleteRecipeAsync(int id);
         Task<bool> RecipeExistsAsync(int id);
 
-        // --- КАТЕГОРИИ ---
+        // КАТЕГОРИИ 
         Task<IEnumerable<Category>> GetAllCategoriesAsync();
         Task<Category?> GetCategoryByIdAsync(int id);
         Task AddCategoryAsync(Category category);
         Task UpdateCategoryAsync(Category category);
         Task DeleteCategoryAsync(int id);
 
-        // --- ЛЮБИМИ РЕЦЕПТИ ---
+        // ЛЮБИМИ РЕЦЕПТИ 
         Task<IEnumerable<FavoriteRecipe>> GetFavoritesByUserIdAsync(int userId);
         Task ToggleFavoriteAsync(int recipeId, int userId);
 
-        // --- ПОТРЕБИТЕЛИ ---
+        //ПОТРЕБИТЕЛИ
         Task<IEnumerable<User>> GetFilteredUsersAsync(string? searchString, string? roleFilter);
         Task<User?> GetUserByIdAsync(int id);
         Task<User?> GetUserByUsernameAsync(string username);
@@ -44,7 +44,7 @@ namespace RecipeCraft.Data
         Task UpdateUserAsync(User user);
         Task DeleteUserAsync(int id);
 
-        // --- КОМЕНТАРИ ---
+        //КОМЕНТАРИ
         Task<IEnumerable<Comment>> GetCommentsByRecipeIdAsync(int recipeId);
         Task AddCommentAsync(Comment comment);
         Task DeleteCommentAsync(int commentId, int userId, bool isAdmin);

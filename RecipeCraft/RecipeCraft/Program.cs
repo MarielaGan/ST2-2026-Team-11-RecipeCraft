@@ -9,7 +9,7 @@ using RecipeCraft.Factories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+
 builder.Services.AddControllersWithViews();
 
 // 1. Регистрация на базата данни SQLite
@@ -45,8 +45,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/Users/Login";
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
     });
-
+builder.Services.AddTransient<IEmailSender, EmailSender>(); 
 var app = builder.Build();
+
+
 
 // 6. АВТОМАТИЧНО СЪЗДАВАНЕ НА БАЗАТА ДАННИ И АДМИН ПОТРЕБИТЕЛ
 using (var scope = app.Services.CreateScope())
@@ -71,7 +73,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Configure the HTTP request pipeline.
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

@@ -32,9 +32,9 @@ namespace RecipeCraft.Controllers
             _webHostEnvironment = webHostEnvironment;
         }
 
-        // ==========================================
+      
         // 1. SELECT WITH FILTER, GEMINI AI SEARCH & PAGINATION
-        // ==========================================
+     
         [AllowAnonymous]
         public async Task<IActionResult> Index(string? searchString, string? category, string? aiQuery, int? pageNumber)
         {
@@ -114,9 +114,8 @@ namespace RecipeCraft.Controllers
             return View(await PaginatedList<Recipe>.CreateAsync(query.AsNoTracking(), pageIndex, pageSize));
         }
 
-        // ==========================================
         // 2. DETAILS (Детайли на рецепта)
-        // ==========================================
+        
         [AllowAnonymous]
         public async Task<IActionResult> Details(int? id)
         {
@@ -134,9 +133,9 @@ namespace RecipeCraft.Controllers
             return View(recipe);
         }
 
-        // ==========================================
+        
         // 3. INSERT (Добавяне на рецепта с ИИ проверка)
-        // ==========================================
+       
         [Authorize]
         public async Task<IActionResult> Create()
         {
@@ -199,9 +198,9 @@ namespace RecipeCraft.Controllers
             return View(recipe);
         }
 
-        // ==========================================
+       
         // 4. EDIT (Редакция на рецепта)
-        // ==========================================
+       
         [Authorize]
         public async Task<IActionResult> Edit(int? id)
         {
@@ -259,9 +258,9 @@ namespace RecipeCraft.Controllers
             if (hasNewImage && ModelState.IsValid)
             {
                 var (isMatch, reason) = await _geminiService.ValidateRecipeImageAsync(
-                    imageFile!, 
-                    recipe.Title, 
-                    recipe.Ingredients, 
+                    imageFile!,
+                    recipe.Title,
+                    recipe.Ingredients,
                     HttpContext.RequestAborted);
 
                 if (!isMatch)
@@ -305,9 +304,9 @@ namespace RecipeCraft.Controllers
             return View(recipe);
         }
 
-        // ==========================================
+       
         // 5. DELETE (Изтриване на рецепта)
-        // ==========================================
+       
         [Authorize]
         public async Task<IActionResult> Delete(int? id)
         {
@@ -354,9 +353,9 @@ namespace RecipeCraft.Controllers
             return RedirectToAction(nameof(MyRecipes));
         }
 
-        // ==========================================
+      
         // 6. MY RECIPES (Рецепти на текущия потребител)
-        // ==========================================
+        
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> MyRecipes(int? pageNumber)
@@ -366,6 +365,8 @@ namespace RecipeCraft.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
+            ViewBag.Categories = await _context.Categories.ToListAsync();
 
             int pageSize = AppSettingsManager.Instance.Settings.RecipesPerPage;
             if (pageSize <= 0) pageSize = 3;
@@ -382,9 +383,8 @@ namespace RecipeCraft.Controllers
             return View("Index", await PaginatedList<Recipe>.CreateAsync(myRecipesQuery.AsNoTracking(), pageIndex, pageSize));
         }
 
-        // ==========================================
-        // Помощен метод за извличане на UserId
-        // ==========================================
+        
+        
         private async Task<int?> GetCurrentUserIdAsync()
         {
             var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -402,6 +402,7 @@ namespace RecipeCraft.Controllers
 
             return null;
         }
+
         private async Task<string> SaveImageAsync(IFormFile imageFile)
         {
             string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");

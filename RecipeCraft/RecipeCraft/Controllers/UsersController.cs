@@ -25,9 +25,9 @@ namespace RecipeCraft.Controllers
             _userFactory = userFactory;
         }
 
-        // ==========================================
+       
         // 1. INDEX (Списък с потребители + Филтриране за Админ)
-        // ==========================================
+        
         public async Task<IActionResult> Index(string? searchString, string? roleFilter)
         {
             ViewData["CurrentFilter"] = searchString;
@@ -37,9 +37,9 @@ namespace RecipeCraft.Controllers
             return View(users);
         }
 
-        // ==========================================
+        
         // 2. LOGIN (Вход в системата)
-        // ==========================================
+        
         [HttpGet]
         public IActionResult Login()
         {
@@ -87,9 +87,8 @@ namespace RecipeCraft.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        // ==========================================
         // 3. REGISTER (Регистрация на обикновен потребител)
-        // ==========================================
+       
         [HttpGet]
         public IActionResult Register()
         {
@@ -143,9 +142,9 @@ namespace RecipeCraft.Controllers
             return View(model);
         }
 
-        // ==========================================
+        
         // 4. LOGOUT (Изход)
-        // ==========================================
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
@@ -154,9 +153,8 @@ namespace RecipeCraft.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        // ==========================================
         // 5. MY PROFILE (Управление на личен профил)
-        // ==========================================
+        
         [HttpGet]
         public async Task<IActionResult> Profile()
         {
@@ -253,9 +251,9 @@ namespace RecipeCraft.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        // ==========================================
+        
         // 6. ADMINISTRATIVE CRUD (Details, Create, Edit, Delete)
-        // ==========================================
+       
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();

@@ -23,7 +23,7 @@ namespace RecipeCraft.Controllers
                 return RedirectToAction("Login", "Users");
             }
 
-            // Използваме IDatabase вместо _context.FavoriteRecipes
+           
             var favorites = await _database.GetFavoritesByUserIdAsync(userId.Value);
 
             return View(favorites);
@@ -39,7 +39,7 @@ namespace RecipeCraft.Controllers
                 return Unauthorized();
             }
 
-            // Логиката за добавяне/премахване е изнесена изцяло в IDatabase
+            
             await _database.ToggleFavoriteAsync(recipeId, userId.Value);
 
             var returnUrl = Request.Headers["Referer"].ToString();
@@ -57,7 +57,7 @@ namespace RecipeCraft.Controllers
             var username = User.Identity?.Name;
             if (!string.IsNullOrEmpty(username))
             {
-                // Използваме IDatabase за намиране на потребителя
+                
                 var user = await _database.GetUserByUsernameAsync(username);
                 return user?.Id;
             }
