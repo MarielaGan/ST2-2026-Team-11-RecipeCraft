@@ -15,26 +15,48 @@
     }
     else
     {
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            @foreach (var fav in Model)
+        <div class="row text-start">
+            @foreach (var fav in Model.Where(f => f.Recipe != null))
             {
-                <div class="col">
-                    <div class="card h-100 shadow-sm border-warning">
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold">@fav.Recipe?.Title</h5>
-                            <span class="badge bg-info text-dark mb-2">
-                                @(fav.Recipe?.Category != null ? fav.Recipe.Category.Name : "Без категория")
-                            </span>
-                            <p class="card-text text-muted">⏱️ @fav.Recipe?.PrepTimeMinutes мин</p>
-                            <p class="card-text"><strong>Продукти:</strong> @fav.Recipe?.Ingredients</p>
-                        </div>
-                        <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
-                            <form asp-controller="Favorites" asp-action="Toggle" method="post">
-                                <input type="hidden" name="recipeId" value="@fav.RecipeId" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    Премахни от любими
-                                </button>
-                            </form>
+                var item = fav.Recipe!;
+
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0 recipe-card overflow-hidden">
+                        <!-- СНИМКА -->
+                        @if (!string.IsNullOrEmpty(item.ImageUrl))
+                        {
+                            <img src="@item.ImageUrl" class="card-img-top" alt="@item.Title" style="height: 200px; object-fit: cover;" />
+                        }
+                        else
+                        {
+                            <div class="bg-light text-center py-5 text-muted" style="height: 200px;">
+                                📷 Няма снимка
+                            </div>
+                        }
+
+                        <div class="card-body d-flex flex-column p-4">
+                            <!-- ИМЕ -->
+                            <h5 class="card-title fw-bold mb-2" style="color: var(--brand-dark-brown);">@item.Title</h5>
+
+                            <!-- ВРЕМЕ -->
+                            <p class="card-text text-muted small mb-2">
+                                Време за приготвяне: @item.PrepTimeMinutes мин
+                            </p>
+
+                            <!-- БУТОНИ -->
+                            <div class="mt-auto pt-2">
+                                <a asp-controller="Recipes" asp-action="Details" asp-route-id="@fav.RecipeId"
+                                   class="btn btn-brand-primary w-100 text-center fw-bold mb-2">
+                                    Виж цялата рецепта →
+                                </a>
+
+                                <form asp-controller="Favorites" asp-action="Toggle" method="post">
+                                    <input type="hidden" name="recipeId" value="@fav.RecipeId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                        Премахни от любими
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
