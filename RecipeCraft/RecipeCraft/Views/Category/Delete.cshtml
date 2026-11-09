@@ -1,0 +1,33 @@
+﻿@model RecipeCraft.Models.Category
+
+@{
+    ViewData["Title"] = "Изтриване на категория";
+}
+
+<div class="container mt-4" style="max-width: 600px;">
+    <div class="card shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+        <div class="card-header py-3" style="background-color: #2d1a0e; color: #f5c23b;">
+            <h4 class="m-0 fw-bold">Потвърждение за изтриване</h4>
+        </div>
+        <div class="card-body p-4">
+            <h5 class="text-danger mb-3">Сигурни ли сте, че искате да изтриете тази категория?</h5>
+            
+            <div class="mb-4">
+                <strong>Име на категорията:</strong>
+                <span class="fs-5 text-dark ms-2">@Model.Name</span>
+            </div>
+
+            <form asp-action="Delete">
+                <input type="hidden" asp-for="Id" />
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn fw-bold px-4" style="background-color: #d9534f; color: #fff; border-radius: 6px;">
+                        Изтрий
+                    </button>
+                    <a asp-action="Index" class="btn fw-bold px-4" style="background-color: #5a3e2b; color: #fff; border-radius: 6px;">
+                        Отказ
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

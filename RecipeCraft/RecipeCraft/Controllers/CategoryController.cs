@@ -67,10 +67,22 @@ namespace RecipeCraft.Controllers
             return View(category);
         }
 
-        // 6. Изтриване на категория (POST)
-        [HttpPost]
+        // 6. Изтриване на категория (GET - Показва страница за потвърждение)
+        [HttpGet]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var category = await _database.GetCategoryByIdAsync(id.Value);
+            if (category == null) return NotFound();
+
+            return View(category);
+        }
+
+        // 7. Истинско изтриване (POST)
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
             await _database.DeleteCategoryAsync(id);
             return RedirectToAction(nameof(Index));
